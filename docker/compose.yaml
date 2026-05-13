@@ -1,0 +1,15 @@
+services:
+  api-db:
+    image: postgres:18.3-alpine
+    container_name: api-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: chatty_api
+    ports:
+      - '5432:5432'
+    volumes:
+      - api-db-data:/var/lib/postgresql
+
+volumes:
+  api-db-data:

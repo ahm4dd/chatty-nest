@@ -2,6 +2,11 @@
   "name": "@chatty-nest/api",
   "version": "0.0.1",
   "private": true,
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "node scripts/seed.ts"
+  },
   "nx": {
     "targets": {
       "build": {
@@ -78,6 +83,47 @@
       "test": {
         "options": {
           "passWithNoTests": true
+        }
+      },
+      "db:generate": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "drizzle-kit generate",
+          "cwd": "apps/api"
+        }
+      },
+      "db:migrate": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "drizzle-kit migrate --config={args.configFile}",
+          "cwd": "apps/api",
+          "args": [
+            "--configFile=drizzle.config.ts"
+          ]
+        }
+      },
+      "db:push": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "drizzle-kit push --config={args.configFile}",
+          "cwd": "apps/api",
+          "args": [
+            "--configFile=drizzle.config.ts"
+          ]
+        }
+      },
+      "db:studio": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "drizzle-kit studio",
+          "cwd": "apps/api"
+        }
+      },
+      "db:seed": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "node scripts/seed.ts",
+          "cwd": "apps/api"
         }
       }
     }

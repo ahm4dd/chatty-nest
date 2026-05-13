@@ -1,22 +1,17 @@
-import { plainToInstance } from 'class-transformer';
-import { validateSync } from 'class-validator';
-import { type ClassConstructor } from 'class-transformer/types/interfaces';
+import { z } from 'zod';
 
-export function validateConfig<T extends object>(
-  envFile: Record<string, unknown>,
-  envVariableClass: ClassConstructor<T>,
-) {
-  const validatedConfig = plainToInstance(envVariableClass, envFile, {
-    enableImplicitConversion: true,
-  });
-  const errors = validateSync(validatedConfig, {
-    skipMissingProperties: false,
-  });
-
-  if (errors.length > 0) {
-    throw new Error(errors.toString());
+export function validateConfig<T>(
+  schema: z.ZodSchema<T>,
+  object: Record<string, unknown>,
+): T {
+  const result = schema.safeParse(object);
+  if (!result.success) {
+    throw new Error(
+      `Invalid environment configuration: ${result.error.message}`,
+    );
   }
-  return validatedConfig;
+
+  return result.data;
 }
 
 export default validateConfig;
