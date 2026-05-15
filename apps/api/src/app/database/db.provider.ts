@@ -1,7 +1,7 @@
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { DrizzleModuleOptions } from './types';
-import * as schema from './schemas/';
+import * as schema from '@chatty-nest/database';
 
 export function createDrizzleInstance(options: DrizzleModuleOptions) {
   const pool = new Pool({
