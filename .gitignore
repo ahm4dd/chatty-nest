@@ -48,3 +48,7 @@ Thumbs.db
 .nx/polygraph
 .nx/self-healing
 test-output
+
+# Local environment variables file
+.env
+!.env.example

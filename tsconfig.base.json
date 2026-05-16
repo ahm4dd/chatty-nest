@@ -16,6 +16,12 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
-    "customConditions": ["@chatty-nest/source"]
+    "customConditions": ["@chatty-nest/source"],
+    "paths": {
+      "@chatty-nest/source": ["./packages/*/src/index.ts"],
+      "@chatty-nest/database": ["./packages/database/src/index.ts"],
+      "@chatty-nest/shared-utils": ["./packages/shared-utils/src/index.ts"],
+      "@chatty-nest/api": ["./apps/api/src/index.ts"]
+    }
   }
 }

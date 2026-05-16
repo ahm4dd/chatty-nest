@@ -1,6 +1,6 @@
 import { registerAs } from '@nestjs/config';
 import { z } from 'zod';
-import validateConfig from '../../utilities/env-validator';
+import { validateConfig } from '@chatty-nest/shared-utils';
 
 export const databaseConfigSchema = z
   .object({

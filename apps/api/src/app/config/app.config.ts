@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { NODE_ENV } from './config.type';
 import { registerAs } from '@nestjs/config';
-import validateConfig from '../../utilities/env-validator';
+import { validateConfig } from '@chatty-nest/shared-utils';
 
 export const appConfigSchema = z.object({
   NODE_ENV: z.enum(NODE_ENV).default('development'),

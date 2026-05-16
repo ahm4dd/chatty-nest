@@ -195,6 +195,15 @@ importers:
       '@chatty-nest/shared-utils':
         specifier: workspace:*
         version: link:../shared-utils
+      drizzle-kit:
+        specifier: ^0.31.10
+        version: 0.31.10
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@types/pg@8.20.0)(pg@8.20.0)
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
 
   packages/shared-utils:
     dependencies:

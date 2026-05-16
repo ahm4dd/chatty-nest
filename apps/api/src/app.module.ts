@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { AppController } from './app/app.controller';
+import { AppService } from './app/app.service';
 import { ConfigModule } from '@nestjs/config';
 import { ClsModule } from 'nestjs-cls';
-import appConfig from './config/app.config';
-import databaseConfig from './config/database.config';
-import { DrizzleModule } from './database/db.module';
-import { createClsConfig } from './config/helpers/cls.config-helper';
+import appConfig from './app/config/app.config';
+import databaseConfig from './app/config/database.config';
+import { DrizzleModule } from './app/database/db.module';
+import { createClsConfig } from './app/config/helpers/cls.config-helper';
 
 @Module({
   imports: [
