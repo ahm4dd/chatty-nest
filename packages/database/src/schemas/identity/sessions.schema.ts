@@ -1,4 +1,4 @@
-import { usersTable } from './users.schema';
+import { usersTable } from './users.schema.js';
 import {
   index,
   pgTable,

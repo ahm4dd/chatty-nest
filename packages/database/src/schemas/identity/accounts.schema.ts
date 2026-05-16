@@ -1,5 +1,5 @@
 import { pgTable, text } from 'drizzle-orm/pg-core';
-import { usersTable } from './users.schema';
+import { usersTable } from './users.schema.js';
 import { timestamp } from 'drizzle-orm/pg-core';
 import { uniqueIndex } from 'drizzle-orm/pg-core';
 import { index } from 'drizzle-orm/pg-core';
