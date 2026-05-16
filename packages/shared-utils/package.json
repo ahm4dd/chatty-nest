@@ -1,0 +1,25 @@
+{
+  "name": "@chatty-nest/shared-utils",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@chatty-nest/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.lib.json"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0",
+    "zod": "^4.4.3"
+  }
+}

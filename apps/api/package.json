@@ -2,11 +2,7 @@
   "name": "@chatty-nest/api",
   "version": "0.0.1",
   "private": true,
-  "scripts": {
-    "db:generate": "drizzle-kit generate",
-    "db:studio": "drizzle-kit studio",
-    "db:seed": "node scripts/seed.ts"
-  },
+  "scripts": {},
   "nx": {
     "targets": {
       "build": {
@@ -130,6 +126,7 @@
   },
   "dependencies": {
     "@chatty-nest/database": "workspace:*",
+    "@chatty-nest/shared-utils": "workspace:*",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",

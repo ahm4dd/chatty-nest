@@ -1,6 +1,6 @@
 import { defineConfig } from 'drizzle-kit';
 import { z } from 'zod';
-import validateConfig from './src/utilities/env-validator';
+import { validateConfig } from '@chatty-nest/shared-utils';
 
 const env = validateConfig(
   z.object({
@@ -10,7 +10,7 @@ const env = validateConfig(
 );
 
 export default defineConfig({
-  schema: ['./src/app/database/schemas'],
+  schema: ['./src/schemas'],
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {
