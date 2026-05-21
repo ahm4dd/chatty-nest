@@ -51,8 +51,8 @@ importers:
         specifier: ^7.8.0
         version: 7.8.1
       uwestjs:
-        specifier: ^1.0.1
-        version: 1.0.1(@nestjs/common@11.1.19(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.1.14)(rxjs@7.8.1))(@nestjs/websockets@11.1.19)(reflect-metadata@0.1.14)(rxjs@7.8.1)
+        specifier: ^2.0.1
+        version: 2.0.1(@nestjs/common@11.1.19(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.1.14)(rxjs@7.8.1))(@nestjs/websockets@11.1.19)(reflect-metadata@0.1.14)(rxjs@7.8.1)
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -3143,6 +3143,10 @@ packages:
     resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
     engines: {node: '>= 0.6'}
 
+  cookie@1.1.1:
+    resolution: {integrity: sha512-ei8Aos7ja0weRpFzJnEA9UHJ/7XQmqglbRwnf2ATjcB9Wq874VKH9kfjjirM6UhU2/E5fFYadylyhFldcqSidQ==}
+    engines: {node: '>=18'}
+
   copy-anything@2.0.6:
     resolution: {integrity: sha512-1j20GZTsvKNkc4BY3NpMOM8tt///wY3FpIzozTOFO2ffuZcV61nojHXVKIy3WM+7ADCy5FVhdZYHYDdgTU0yJw==}
 
@@ -5973,9 +5977,9 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  uWebSockets.js@https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/a80dda2d22ba32cf174ef78cc8d743e910a9be21:
-    resolution: {tarball: https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/a80dda2d22ba32cf174ef78cc8d743e910a9be21}
-    version: 20.60.0
+  uWebSockets.js@https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/93baa7b494a37c831262faa3d6f48ceab75eb1ae:
+    resolution: {tarball: https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/93baa7b494a37c831262faa3d6f48ceab75eb1ae}
+    version: 20.65.0
 
   uglify-js@3.19.3:
     resolution: {integrity: sha512-v3Xu+yuwBXisp6QYTcH4UbH+xYJXqnq2m/LtQVWKWzYc1iehYnLixoQDN9FH6/j9/oybfd6W9Ghwkl8+UMKTKQ==}
@@ -6048,9 +6052,9 @@ packages:
     deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
-  uwestjs@1.0.1:
-    resolution: {integrity: sha512-bHRy904KwsXCcxub03So67n+r3FnxOKPHLbK1Q7WsPcyUpIExlCzDdnYxMUJRmYGumEOAA3eX98fACaECd/MzQ==}
-    engines: {node: '>=20.0.0'}
+  uwestjs@2.0.1:
+    resolution: {integrity: sha512-T0Ut4G8+oLFFhOpstOZD9nzex0Fj5MVlJ7rwVNfpYpI0nY5sfHXUXtANIHbhVp7AWUy9CPIOVDYQBPEcYXnpKA==}
+    engines: {node: '>=24.0.0 <=25'}
     peerDependencies:
       '@nestjs/common': ^9.0.0 || ^10.0.0 || ^11.0.0
       '@nestjs/websockets': ^9.0.0 || ^10.0.0 || ^11.0.0
@@ -9503,6 +9507,8 @@ snapshots:
 
   cookie@0.7.2: {}
 
+  cookie@1.1.1: {}
+
   copy-anything@2.0.6:
     dependencies:
       is-what: 3.14.1
@@ -12597,7 +12603,7 @@ snapshots:
 
   typescript@5.9.3: {}
 
-  uWebSockets.js@https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/a80dda2d22ba32cf174ef78cc8d743e910a9be21: {}
+  uWebSockets.js@https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/93baa7b494a37c831262faa3d6f48ceab75eb1ae: {}
 
   uglify-js@3.19.3:
     optional: true
@@ -12671,13 +12677,22 @@ snapshots:
 
   uuid@8.3.2: {}
 
-  uwestjs@1.0.1(@nestjs/common@11.1.19(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.1.14)(rxjs@7.8.1))(@nestjs/websockets@11.1.19)(reflect-metadata@0.1.14)(rxjs@7.8.1):
+  uwestjs@2.0.1(@nestjs/common@11.1.19(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.1.14)(rxjs@7.8.1))(@nestjs/websockets@11.1.19)(reflect-metadata@0.1.14)(rxjs@7.8.1):
     dependencies:
       '@nestjs/common': 11.1.19(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.1.14)(rxjs@7.8.1)
       '@nestjs/websockets': 11.1.19(@nestjs/common@11.1.19(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.1.14)(rxjs@7.8.1))(@nestjs/core@11.1.19)(reflect-metadata@0.1.14)(rxjs@7.8.1)
+      busboy: 1.6.0
+      compressible: 2.0.18
+      content-disposition: 1.1.0
+      cookie: 1.1.1
+      cookie-signature: 1.2.2
+      etag: 1.8.1
+      mime-types: 3.0.2
+      ms: 2.1.3
+      range-parser: 1.2.1
       reflect-metadata: 0.1.14
       rxjs: 7.8.1
-      uWebSockets.js: https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/a80dda2d22ba32cf174ef78cc8d743e910a9be21
+      uWebSockets.js: https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/93baa7b494a37c831262faa3d6f48ceab75eb1ae
 
   v8-compile-cache-lib@3.0.1: {}
 
