@@ -1,5 +1,5 @@
 import { pgTable, text } from 'drizzle-orm/pg-core';
-import { usersTable } from './users.schema.js';
+import { users } from './users.schema.ts';
 import { timestamp } from 'drizzle-orm/pg-core';
 import { uniqueIndex } from 'drizzle-orm/pg-core';
 import { index } from 'drizzle-orm/pg-core';
@@ -38,7 +38,7 @@ export const accounts = pgTable(
     // Associated user
     userId: text('user_id')
       .notNull()
-      .references(() => usersTable.id, {
+      .references(() => users.id, {
         onDelete: 'cascade',
       }),
 

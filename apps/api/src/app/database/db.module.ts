@@ -13,8 +13,8 @@ export class DrizzleModule {
         {
           provide: DB_TOKEN,
           inject: [databaseConfig.KEY],
-          useFactory: (databaseConfigValue: DatabaseConfig) => {
-            return createDrizzleInstance({
+          useFactory: async (databaseConfigValue: DatabaseConfig) => {
+            return await createDrizzleInstance({
               connectionString:
                 options?.connectionString ?? databaseConfigValue.DATABASE_URL,
               connectionTimeoutMillis:
@@ -44,7 +44,7 @@ export class DrizzleModule {
           inject: options.inject ?? [],
           useFactory: async (...args: unknown[]) => {
             const moduleOptions = await options.useFactory(...args);
-            return createDrizzleInstance(moduleOptions);
+            return await createDrizzleInstance(moduleOptions);
           },
         },
       ],

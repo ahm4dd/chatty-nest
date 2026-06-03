@@ -1,4 +1,4 @@
-import { usersTable } from './users.schema.js';
+import { users } from './users.schema.ts';
 import {
   index,
   pgTable,
@@ -25,7 +25,7 @@ export const sessions = pgTable(
     id: text('id').primaryKey(),
     userId: text('user_id')
       .notNull()
-      .references(() => usersTable.id, {
+      .references(() => users.id, {
         onDelete: 'cascade',
       }),
 

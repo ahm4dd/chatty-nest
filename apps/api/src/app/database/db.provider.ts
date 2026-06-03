@@ -1,9 +1,9 @@
-import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { DrizzleModuleOptions } from './types';
-import * as schema from '@chatty-nest/database';
+import { DrizzleDb, DrizzleModuleOptions } from './types';
+import { schema } from '@chatty-nest/database';
 
-export function createDrizzleInstance(options: DrizzleModuleOptions) {
+export async function createDrizzleInstance(options: DrizzleModuleOptions) {
   const pool = new Pool({
     connectionString: options.connectionString,
     max: options.max ?? 10,
@@ -32,10 +32,6 @@ export function createDrizzleInstance(options: DrizzleModuleOptions) {
     });
 }
 
-function testDatabaseConnection(
-  nodePgDb: NodePgDatabase<typeof schema> & {
-    $client: Pool;
-  },
-) {
-  return nodePgDb.$client.connect();
+async function testDatabaseConnection(nodePgDb: DrizzleDb) {
+  return await nodePgDb.$client.connect();
 }

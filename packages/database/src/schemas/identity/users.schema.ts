@@ -46,7 +46,7 @@ export interface UserPreferences {
  * Extended fields (business-specific, compatible with Better Auth additionalFields):
  *   username, displayUsername, displayName, bio, preferences
  */
-export const usersTable = pgTable(
+export const users = pgTable(
   'users',
   {
     // Primary key (text, generated using nanoid)
@@ -109,9 +109,9 @@ export const usersTable = pgTable(
 /**
  * User database type (inferred from table definition)
  */
-export type UserDatabase = typeof usersTable.$inferSelect;
+export type UserDatabase = typeof users.$inferSelect;
 
 /**
  * Insert User type (inferred from table definition)
  */
-export type InsertUserDatabase = typeof usersTable.$inferInsert;
+export type InsertUserDatabase = typeof users.$inferInsert;

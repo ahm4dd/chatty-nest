@@ -2,12 +2,9 @@
   "name": "@chatty-nest/database",
   "version": "0.0.1",
   "private": true,
-  "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.lib.json",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push --config=drizzle.config.ts",
     "db:studio": "drizzle-kit studio",
@@ -16,16 +13,11 @@
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "@chatty-nest/source": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
     }
   },
   "dependencies": {
-    "drizzle-kit": "^0.31.10",
-    "zod": "^4.4.3",
-    "@chatty-nest/shared-utils": "workspace:*",
-    "drizzle-orm": "^0.45.2"
+    "@chatty-nest/shared-utils": "workspace:*"
   }
 }
