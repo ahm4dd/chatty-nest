@@ -10,7 +10,8 @@ import { DrizzleModule } from '../../app/database/db.module';
     JwtModule.registerAsync({
       useFactory: async (appConfig: AppConfig) => {
         return {
-          secret: appConfig.JWT_SECRET,
+          publicKey: appConfig.JWT_PUBLIC_KEY,
+          privateKey: appConfig.JWT_PRIVATE_KEY,
           signOptions: {
             expiresIn: appConfig.JWT_EXPIRATION,
           },
