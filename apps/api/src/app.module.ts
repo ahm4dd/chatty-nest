@@ -9,6 +9,7 @@ import databaseConfig from './app/config/database.config';
 import { DrizzleModule } from './app/database/db.module';
 import { createClsConfig } from './app/config/helpers/cls.config-helper';
 import { DomainEventsModule } from './app/events/domain-events.module';
+import { DocsModule } from './app/docs/docs.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { DomainEventsModule } from './app/events/domain-events.module';
       envFilePath: ['.env'], // TODO: introduce .env.development and .env.production and so on
     }),
     DrizzleModule.forRoot(),
+    DocsModule,
     ClsModule.forRoot(createClsConfig()),
     EventEmitterModule.forRoot({
       wildcard: true, // support wildcard event listeners (e.g. 'user.*')
