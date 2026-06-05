@@ -96,6 +96,7 @@ The following is implemented and production-ready within the monolith:
 | API Docs          | Scalar + @nestjs/swagger            | Beautiful interactive docs, OpenAPI 3.x                   |
 | Monorepo          | Nx 22                               | Smart task runner, dependency graph, caching              |
 | Package Manager   | pnpm                                | Disk-efficient, strict hoisting                           |
+| Build             | SWC                                 | ~64ms transpilation, decorator support                    |
 | Testing           | Jest + SWC                          | Fast compilation, good DX                                 |
 
 ---
@@ -297,7 +298,7 @@ pnpm nx run api:db:push
 ### 6. Start the dev server
 
 ```bash
-pnpm nx run api:serve
+pnpm nx run api:serve:development
 ```
 
 The server starts at **http://localhost:3000**.

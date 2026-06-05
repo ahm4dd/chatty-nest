@@ -6,8 +6,8 @@ import { validateConfig } from '@chatty-nest/shared-utils';
 export const appConfigSchema = z.object({
   NODE_ENV: z.enum(NODE_ENV).default('development'),
   PORT: z.coerce.number().default(3000),
-  JWT_PUBLIC_KEY: z.string(),
-  JWT_PRIVATE_KEY: z.string(),
+  JWT_PUBLIC_KEY: z.string().transform((v) => Buffer.from(v, 'base64').toString('utf-8')),
+  JWT_PRIVATE_KEY: z.string().transform((v) => Buffer.from(v, 'base64').toString('utf-8')),
   JWT_EXPIRATION: z.coerce.number().default(3600),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
 });
