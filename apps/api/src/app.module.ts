@@ -10,6 +10,7 @@ import { DrizzleModule } from './app/database/db.module';
 import { createClsConfig } from './app/config/helpers/cls.config-helper';
 import { DomainEventsModule } from './app/events/domain-events.module';
 import { DocsModule } from './app/docs/docs.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { DocsModule } from './app/docs/docs.module';
       ignoreErrors: false, // do not suppress errors from event handlers
     }),
     DomainEventsModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

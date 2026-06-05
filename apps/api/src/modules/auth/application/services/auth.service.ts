@@ -20,7 +20,7 @@ import type { PasswordHasher } from '../ports/password-hasher.port';
 import { User } from '../../domain/aggregates/user.aggregate';
 import { Account } from '../../domain/aggregates/account.aggregate';
 import { Session } from '../../domain/entities/session.entity';
-import type { DomainEventsPublisher } from '../../../../app/events/domain-events-publisher.service';
+import { DomainEventsPublisher } from '../../../../app/events/domain-events-publisher.service';
 import appConfig, { type AppConfig } from '../../../../app/config/app.config';
 
 interface DeviceContext {
@@ -90,7 +90,7 @@ export class AuthService {
       });
     }
 
-    const isValid = await this.passwordHasher.verify(password, identity.passwordHash);
+    const isValid = await this.passwordHasher.verify(password, identity.passwordHash!);
     if (!isValid) {
       throw new UnauthorizedException({
         message: 'Invalid email or password',
@@ -217,7 +217,7 @@ export class AuthService {
       });
     }
 
-    const isValid = await this.passwordHasher.verify(currentPassword, emailIdentity.passwordHash);
+    const isValid = await this.passwordHasher.verify(currentPassword, emailIdentity.passwordHash!);
     if (!isValid) {
       throw new UnauthorizedException({
         message: 'Current password is incorrect',

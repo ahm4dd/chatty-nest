@@ -8,7 +8,7 @@ import { JwtPayload } from '../interfaces/jwt.interface';
 @Injectable()
 export class JwtAuthStrategy extends PassportStrategy(Strategy) {
   constructor(
-    @Inject(appConfig.KEY) private readonly appConfig: AppConfig,
+    @Inject(appConfig.KEY) appConfig: AppConfig,
     private readonly cls: ClsService,
   ) {
     super({

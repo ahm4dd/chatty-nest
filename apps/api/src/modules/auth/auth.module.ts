@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 import appConfig, { AppConfig } from '../../app/config/app.config';
 import { DrizzleModule } from '../../app/database/db.module';
 import { AuthController } from './presentation/controllers/auth.controller';
@@ -19,6 +20,7 @@ import {
   PASSWORD_HASHER_TOKEN,
 } from './application/ports/tokens';
 
+@Global()
 @Module({
   controllers: [AuthController],
   providers: [
@@ -33,6 +35,7 @@ import {
     UserBannedListener,
   ],
   imports: [
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       useFactory: async (appConfig: AppConfig) => ({
         publicKey: appConfig.JWT_PUBLIC_KEY,

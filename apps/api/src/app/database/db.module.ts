@@ -29,6 +29,7 @@ export class DrizzleModule {
           },
         },
       ],
+      exports: [DB_TOKEN],
     };
   }
 

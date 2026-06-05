@@ -366,8 +366,9 @@ All endpoints are prefixed with `/api`. Interactive docs at `/api/reference`.
 
 | Command                          | Description                             |
 | -------------------------------- | --------------------------------------- |
-| `pnpm nx run api:serve`          | Start dev server with hot reload        |
-| `pnpm nx run api:build`          | Production build (webpack)              |
+| `pnpm nx run api:serve`              | Start production server                          |
+| `pnpm nx run api:serve:development` | Start dev server with `node --watch`             |
+| `pnpm nx run api:build`             | Production build (SWC)                          |
 | `pnpm nx run api:test`           | Run unit tests                          |
 | `pnpm nx run api:lint`           | ESLint check                            |
 | `pnpm nx run api:typecheck`      | TypeScript type-check (0 errors policy) |
