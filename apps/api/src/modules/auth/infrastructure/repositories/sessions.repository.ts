@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, gt } from 'drizzle-orm';
 import { sessions } from '@chatty-nest/database';
-import { DB_TOKEN, type DrizzleDb } from '../../../../app/database/types';
+import { DB_TOKEN, type DrizzleDb, type Tx } from '../../../../app/database/types';
 import { Session } from '../../domain/entities/session.entity';
 import type { SessionsRepositoryPort } from '../../application/ports/sessions.repository.port';
 
@@ -12,7 +12,8 @@ export class SessionsRepositoryImpl implements SessionsRepositoryPort {
     private readonly db: DrizzleDb,
   ) {}
 
-  async save(session: Session): Promise<void> {
+  async save(session: Session, tx?: Tx): Promise<void> {
+    const db = tx ?? this.db;
     const data = {
       id: session.id,
       userId: session.userId,
@@ -22,15 +23,15 @@ export class SessionsRepositoryImpl implements SessionsRepositoryPort {
       userAgent: session.userAgent,
     };
 
-    const existing = await this.findById(session.id);
+    const existing = await this.findById(session.id, tx);
 
     if (existing) {
-      await this.db
+      await db
         .update(sessions)
         .set({ ...data, updatedAt: new Date() })
         .where(eq(sessions.id, session.id));
     } else {
-      await this.db.insert(sessions).values({
+      await db.insert(sessions).values({
         ...data,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -38,8 +39,9 @@ export class SessionsRepositoryImpl implements SessionsRepositoryPort {
     }
   }
 
-  async findById(id: string): Promise<Session | null> {
-    const [record] = await this.db
+  async findById(id: string, tx?: Tx): Promise<Session | null> {
+    const db = tx ?? this.db;
+    const [record] = await db
       .select()
       .from(sessions)
       .where(eq(sessions.id, id))
@@ -49,8 +51,9 @@ export class SessionsRepositoryImpl implements SessionsRepositoryPort {
     return this.toDomain(record);
   }
 
-  async findByToken(token: string): Promise<Session | null> {
-    const [record] = await this.db
+  async findByToken(token: string, tx?: Tx): Promise<Session | null> {
+    const db = tx ?? this.db;
+    const [record] = await db
       .select()
       .from(sessions)
       .where(eq(sessions.token, token))
@@ -74,13 +77,15 @@ export class SessionsRepositoryImpl implements SessionsRepositoryPort {
     return records.map((record) => this.toDomain(record));
   }
 
-  async delete(id: string): Promise<boolean> {
-    const result = await this.db.delete(sessions).where(eq(sessions.id, id));
+  async delete(id: string, tx?: Tx): Promise<boolean> {
+    const db = tx ?? this.db;
+    const result = await db.delete(sessions).where(eq(sessions.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 
-  async deleteAllByUserId(userId: string): Promise<number> {
-    const result = await this.db.delete(sessions).where(eq(sessions.userId, userId));
+  async deleteAllByUserId(userId: string, tx?: Tx): Promise<number> {
+    const db = tx ?? this.db;
+    const result = await db.delete(sessions).where(eq(sessions.userId, userId));
     return result.rowCount ?? 0;
   }
 

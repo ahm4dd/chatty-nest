@@ -12,7 +12,9 @@
           "outputPath": "apps/api/dist",
           "outputFileName": "main.js",
           "tsConfig": "tsconfig.app.json",
-          "assets": ["src/assets"],
+          "assets": [
+            "src/assets"
+          ],
           "skipTypeCheck": true,
           "stripLeadingPaths": true,
           "clean": true
@@ -57,16 +59,23 @@
       },
       "serve": {
         "executor": "nx:run-commands",
+        "defaultConfiguration": "development",
         "dependsOn": [
           "build"
         ],
         "options": {
-          "command": "node dist/main.js",
           "cwd": "apps/api"
         },
         "configurations": {
           "development": {
-            "command": "node --watch dist/main.js"
+            "commands": [
+              "swc src -d dist --strip-leading-paths --config-file .swcrc --watch",
+              "node --watch dist/main.js"
+            ],
+            "parallel": true
+          },
+          "production": {
+            "command": "node dist/main.js"
           }
         }
       },
@@ -145,6 +154,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@nestjs/testing": "^11.0.0"
+    "@nestjs/testing": "^11.0.0",
+    "chokidar": "^5.0.0"
   }
 }

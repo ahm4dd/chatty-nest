@@ -3,7 +3,7 @@ import {
   UsersRepositoryPort,
 } from '../../application/ports/users.repository.port';
 import { User } from '../../domain/aggregates/user.aggregate';
-import { DB_TOKEN, type DrizzleDb } from '../../../../app/database/types';
+import { DB_TOKEN, type DrizzleDb, type Tx } from '../../../../app/database/types';
 import { users } from '@chatty-nest/database';
 import { and, eq } from 'drizzle-orm';
 
@@ -14,11 +14,12 @@ export class UsersRepositoryImpl implements UsersRepositoryPort {
     private readonly db: DrizzleDb,
   ) {}
 
-  async save(user: User): Promise<User> {
-    const existing = await this.findById(user.id);
+  async save(user: User, tx?: Tx): Promise<User> {
+    const db = tx ?? this.db;
+    const existing = await this.findById(user.id, tx);
 
     if (!existing) {
-      await this.db.insert(users).values({
+      await db.insert(users).values({
         id: user.id,
         email: user.email,
         name: user.name,
@@ -32,7 +33,7 @@ export class UsersRepositoryImpl implements UsersRepositoryPort {
         updatedAt: user.updatedAt,
       });
     } else {
-      await this.db
+      await db
         .update(users)
         .set({
           name: user.name,
@@ -51,8 +52,9 @@ export class UsersRepositoryImpl implements UsersRepositoryPort {
     return user;
   }
 
-  async findById(id: string): Promise<User | null> {
-    const [record] = await this.db.select().from(users).where(eq(users.id, id));
+  async findById(id: string, tx?: Tx): Promise<User | null> {
+    const db = tx ?? this.db;
+    const [record] = await db.select().from(users).where(eq(users.id, id));
 
     if (!record) return null;
     return User.from(record);

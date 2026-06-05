@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
 import { accounts } from '@chatty-nest/database';
-import { DB_TOKEN, type DrizzleDb } from '../../../../app/database/types';
+import { DB_TOKEN, type DrizzleDb, type Tx } from '../../../../app/database/types';
 import { Account } from '../../domain/aggregates/account.aggregate';
 import type { AuthProvider } from '../../domain/value-objects/auth-provider.vo';
 import type { AccountsRepositoryPort } from '../../application/ports/accounts.repository.port';
@@ -13,7 +13,8 @@ export class AccountsRepositoryImpl implements AccountsRepositoryPort {
     private readonly db: DrizzleDb,
   ) {}
 
-  async save(account: Account): Promise<void> {
+  async save(account: Account, tx?: Tx): Promise<void> {
+    const db = tx ?? this.db;
     const data = {
       id: account.id,
       userId: account.userId,
@@ -29,20 +30,21 @@ export class AccountsRepositoryImpl implements AccountsRepositoryPort {
       updatedAt: account.updatedAt,
     };
 
-    const existing = await this.findById(account.id);
+    const existing = await this.findById(account.id, tx);
 
     if (existing) {
-      await this.db.update(accounts).set(data).where(eq(accounts.id, account.id));
+      await db.update(accounts).set(data).where(eq(accounts.id, account.id));
     } else {
-      await this.db.insert(accounts).values({
+      await db.insert(accounts).values({
         ...data,
         createdAt: account.createdAt,
       });
     }
   }
 
-  async findById(id: string): Promise<Account | null> {
-    const [record] = await this.db
+  async findById(id: string, tx?: Tx): Promise<Account | null> {
+    const db = tx ?? this.db;
+    const [record] = await db
       .select()
       .from(accounts)
       .where(eq(accounts.id, id))
@@ -52,8 +54,9 @@ export class AccountsRepositoryImpl implements AccountsRepositoryPort {
     return this.toDomain(record);
   }
 
-  async findByProvider(providerId: AuthProvider, accountId: string): Promise<Account | null> {
-    const [record] = await this.db
+  async findByProvider(providerId: AuthProvider, accountId: string, tx?: Tx): Promise<Account | null> {
+    const db = tx ?? this.db;
+    const [record] = await db
       .select()
       .from(accounts)
       .where(
@@ -77,13 +80,15 @@ export class AccountsRepositoryImpl implements AccountsRepositoryPort {
     return records.map((record) => this.toDomain(record));
   }
 
-  async delete(id: string): Promise<boolean> {
-    const result = await this.db.delete(accounts).where(eq(accounts.id, id));
+  async delete(id: string, tx?: Tx): Promise<boolean> {
+    const db = tx ?? this.db;
+    const result = await db.delete(accounts).where(eq(accounts.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 
-  async deleteAllByUserId(userId: string): Promise<number> {
-    const result = await this.db.delete(accounts).where(eq(accounts.userId, userId));
+  async deleteAllByUserId(userId: string, tx?: Tx): Promise<number> {
+    const db = tx ?? this.db;
+    const result = await db.delete(accounts).where(eq(accounts.userId, userId));
     return result.rowCount ?? 0;
   }
 

@@ -33,5 +33,5 @@ export async function createDrizzleInstance(options: DrizzleModuleOptions) {
 }
 
 async function testDatabaseConnection(nodePgDb: DrizzleDb) {
-  return await nodePgDb.$client.connect();
+  await nodePgDb.$client.query('SELECT 1');
 }

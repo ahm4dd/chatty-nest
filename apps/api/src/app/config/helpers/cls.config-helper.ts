@@ -5,12 +5,12 @@ import { UwsRequest } from 'uwestjs';
 export function createClsConfig(): ClsModuleOptions {
   return {
     global: true,
-    interceptor: {
+    guard: {
       mount: true,
       generateId: true,
-      idGenerator: (context) => {
-        const request = getRequestFromContext(context);
-        const requestId = request.headers?.['x-request-id'];
+      idGenerator: (context: ExecutionContext) => {
+        const req = getRequestFromContext(context);
+        const requestId = req.headers?.['x-request-id'];
 
         return typeof requestId === 'string' ? requestId : crypto.randomUUID();
       },
@@ -20,18 +20,17 @@ export function createClsConfig(): ClsModuleOptions {
 }
 
 function setupClsModule(cls: ClsService, context: ExecutionContext): void {
-  const request = getRequestFromContext(context);
+  const req = getRequestFromContext(context);
 
   cls.set('requestId', cls.getId());
-  cls.set('userAgent', request.headers?.['user-agent'] || 'unknown');
-  const forwarded = request.headers['x-forwarded-for'];
+  cls.set('userAgent', req.headers?.['user-agent'] || 'unknown');
+  const forwarded = req.headers['x-forwarded-for'];
   const forwardedIp = Array.isArray(forwarded)
     ? forwarded[0]
     : forwarded?.split(',')[0]?.trim();
 
-  cls.set('ip', forwardedIp || (request.headers['x-real-ip'] as string) || 'unknown');
-  cls.set('url', request.url || request.originalUrl || 'unknown');
-  // TODO: add more context info if needed, e.g., correlationId, W3C headers and trace context, etc.
+  cls.set('ip', forwardedIp || (req.headers['x-real-ip'] as string) || 'unknown');
+  cls.set('url', req.url || 'unknown');
 }
 
 function getRequestFromContext(context: ExecutionContext): UwsRequest {

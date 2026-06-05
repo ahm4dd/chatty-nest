@@ -298,7 +298,7 @@ pnpm nx run api:db:push
 ### 6. Start the dev server
 
 ```bash
-pnpm nx run api:serve:development
+pnpm nx run api:serve
 ```
 
 The server starts at **http://localhost:3000**.
@@ -367,8 +367,8 @@ All endpoints are prefixed with `/api`. Interactive docs at `/api/reference`.
 
 | Command                          | Description                             |
 | -------------------------------- | --------------------------------------- |
-| `pnpm nx run api:serve`              | Start production server                          |
-| `pnpm nx run api:serve:development` | Start dev server with `node --watch`             |
+| `pnpm nx run api:serve`              | Start dev server with hot reload (SWC watch + node watch) |
+| `pnpm nx run api:serve:production`  | Start production server                          |
 | `pnpm nx run api:build`             | Production build (SWC)                          |
 | `pnpm nx run api:test`           | Run unit tests                          |
 | `pnpm nx run api:lint`           | ESLint check                            |

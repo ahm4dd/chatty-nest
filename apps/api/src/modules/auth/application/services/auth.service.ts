@@ -9,6 +9,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import type { RoleType } from '../../../../shared-kernal/domain/value-objects/role.vo';
 
+import { DB_TOKEN, type DrizzleDb, type Tx } from '../../../../app/database/types';
 import { USERS_REPOSITORY_TOKEN } from '../ports/tokens';
 import { ACCOUNTS_REPOSITORY_TOKEN } from '../ports/tokens';
 import { SESSIONS_REPOSITORY_TOKEN } from '../ports/tokens';
@@ -31,6 +32,8 @@ interface DeviceContext {
 @Injectable()
 export class AuthService {
   constructor(
+    @Inject(DB_TOKEN)
+    private readonly db: DrizzleDb,
     @Inject(USERS_REPOSITORY_TOKEN)
     private readonly usersRepository: UsersRepositoryPort,
     @Inject(ACCOUNTS_REPOSITORY_TOKEN)
@@ -51,25 +54,39 @@ export class AuthService {
     name: string,
     deviceContext?: DeviceContext,
   ) {
-    const existing = await this.accountsRepository.findByProvider('email', email);
-    if (existing) {
-      throw new ConflictException({
-        message: 'This email is already registered',
-      });
-    }
-
-    const userId = randomUUID();
-    const user = User.create({ id: userId, name, email });
-    await this.usersRepository.save(user);
-
-    const accountId = randomUUID();
     const passwordHash = await this.passwordHasher.hash(password);
-    const account = Account.createEmailIdentity(accountId, userId, email, passwordHash);
-    await this.accountsRepository.save(account);
 
-    await this.domainEventsPublisher.publishEventsForAggregate(user);
+    const { userId, role, sessionId, refreshToken } = await this.db.transaction(async (tx) => {
+      const existing = await this.accountsRepository.findByProvider('email', email, tx);
+      if (existing) {
+        throw new ConflictException({
+          message: 'This email is already registered',
+        });
+      }
 
-    return this.generateTokens(userId, email, user.role, deviceContext);
+      const userId = randomUUID();
+      const user = User.create({ id: userId, name, email });
+      await this.usersRepository.save(user, tx);
+
+      const accountId = randomUUID();
+      const account = Account.createEmailIdentity(accountId, userId, email, passwordHash);
+      await this.accountsRepository.save(account, tx);
+
+      await this.domainEventsPublisher.publishEventsForAggregate(user);
+
+      const session = await this.createSession(userId, deviceContext, tx);
+
+      return { userId, role: user.role, sessionId: session.sessionId, refreshToken: session.refreshToken };
+    });
+
+    const accessToken = this.jwtService.sign({
+      sub: userId,
+      email,
+      roles: [role],
+      sessionId,
+    });
+
+    return { accessToken, refreshToken, user: { id: userId, email, role } };
   }
 
   async login(
@@ -104,27 +121,51 @@ export class AuthService {
       });
     }
 
-    return this.generateTokens(user.id, email, user.role, deviceContext);
+    const { sessionId, refreshToken } = await this.db.transaction(async (tx) => {
+      return this.createSession(user.id, deviceContext, tx);
+    });
+
+    const accessToken = this.jwtService.sign({
+      sub: user.id,
+      email,
+      roles: [user.role],
+      sessionId,
+    });
+
+    return { accessToken, refreshToken, user: { id: user.id, email, role: user.role } };
   }
 
   async refreshToken(refreshToken: string) {
-    const session = await this.sessionsRepository.findByToken(refreshToken);
-    if (!session?.isValid) {
-      throw new UnauthorizedException({
-        message: 'Invalid or expired refresh token',
-      });
-    }
+    const { userId, email, role, sessionId, newRefreshToken } = await this.db.transaction(async (tx) => {
+      const session = await this.sessionsRepository.findByToken(refreshToken, tx);
+      if (!session?.isValid) {
+        throw new UnauthorizedException({
+          message: 'Invalid or expired refresh token',
+        });
+      }
 
-    await this.sessionsRepository.delete(session.id);
+      await this.sessionsRepository.delete(session.id, tx);
 
-    const user = await this.usersRepository.findById(session.userId);
-    if (!user) {
-      throw new UnauthorizedException({
-        message: 'User not found',
-      });
-    }
+      const user = await this.usersRepository.findById(session.userId, tx);
+      if (!user) {
+        throw new UnauthorizedException({
+          message: 'User not found',
+        });
+      }
 
-    return this.generateTokens(user.id, user.email, user.role);
+      const newSession = await this.createSession(user.id, undefined, tx);
+
+      return { userId: user.id, email: user.email, role: user.role, sessionId: newSession.sessionId, newRefreshToken: newSession.refreshToken };
+    });
+
+    const accessToken = this.jwtService.sign({
+      sub: userId,
+      email,
+      roles: [role],
+      sessionId,
+    });
+
+    return { accessToken, refreshToken: newRefreshToken, user: { id: userId, email, role } };
   }
 
   async logout(refreshToken: string): Promise<boolean> {
@@ -225,17 +266,19 @@ export class AuthService {
     }
 
     const newPasswordHash = await this.passwordHasher.hash(newPassword);
-    emailIdentity.changePassword(newPasswordHash);
-    await this.accountsRepository.save(emailIdentity);
 
-    await this.sessionsRepository.deleteAllByUserId(userId);
+    await this.db.transaction(async (tx) => {
+      emailIdentity.changePassword(newPasswordHash);
+      await this.accountsRepository.save(emailIdentity, tx);
+
+      await this.sessionsRepository.deleteAllByUserId(userId, tx);
+    });
   }
 
-  private async generateTokens(
+  private async createSession(
     userId: string,
-    email: string,
-    role: RoleType,
     deviceContext?: DeviceContext,
+    tx?: Tx,
   ) {
     const refreshToken = randomUUID();
     const expiresAt = this.parseExpiration(this.appConfig.JWT_REFRESH_EXPIRES_IN);
@@ -249,20 +292,9 @@ export class AuthService {
       deviceContext?.ipAddress,
       deviceContext?.userAgent,
     );
-    await this.sessionsRepository.save(session);
+    await this.sessionsRepository.save(session, tx);
 
-    const accessToken = this.jwtService.sign({
-      sub: userId,
-      email,
-      roles: [role],
-      sessionId,
-    });
-
-    return {
-      accessToken,
-      refreshToken,
-      user: { id: userId, email, role },
-    };
+    return { sessionId, refreshToken };
   }
 
   private parseExpiration(expiresIn: string): Date {
