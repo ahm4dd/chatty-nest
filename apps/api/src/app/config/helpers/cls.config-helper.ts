@@ -24,7 +24,12 @@ function setupClsModule(cls: ClsService, context: ExecutionContext): void {
 
   cls.set('requestId', cls.getId());
   cls.set('userAgent', request.headers?.['user-agent'] || 'unknown');
-  cls.set('ip', request.ip || request.connection?.remoteAddress || 'unknown');
+  const forwarded = request.headers['x-forwarded-for'];
+  const forwardedIp = Array.isArray(forwarded)
+    ? forwarded[0]
+    : forwarded?.split(',')[0]?.trim();
+
+  cls.set('ip', forwardedIp || (request.headers['x-real-ip'] as string) || 'unknown');
   cls.set('url', request.url || request.originalUrl || 'unknown');
   // TODO: add more context info if needed, e.g., correlationId, W3C headers and trace context, etc.
 }

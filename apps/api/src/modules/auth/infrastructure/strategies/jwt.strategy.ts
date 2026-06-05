@@ -22,6 +22,8 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload) {
     this.cls.set('userId', payload.sub);
     this.cls.set('userEmail', payload.email);
+    this.cls.set('sessionId', payload.sessionId);
+    this.cls.set('roles', payload.roles);
 
     return {
       id: payload.sub,

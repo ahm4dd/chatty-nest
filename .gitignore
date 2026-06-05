@@ -52,3 +52,8 @@ test-output
 # Local environment variables file
 .env
 !.env.example
+
+# TypeScript declaration build artifacts
+*.d.ts.map
+packages/database/src/**/*.d.ts
+*.tsbuildinfo

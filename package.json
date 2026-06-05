@@ -64,5 +64,18 @@
     "rxjs": "^7.8.0",
     "uwestjs": "^2.0.1",
     "zod": "^4.4.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@parcel/watcher",
+      "@scarf/scarf",
+      "@swc/core",
+      "argon2",
+      "esbuild",
+      "less",
+      "nx",
+      "unrs-resolver"
+    ]
   }
 }

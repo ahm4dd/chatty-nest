@@ -9,6 +9,7 @@ export const appConfigSchema = z.object({
   JWT_PUBLIC_KEY: z.string(),
   JWT_PRIVATE_KEY: z.string(),
   JWT_EXPIRATION: z.coerce.number().default(3600),
+  JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
 });
 
 export type AppConfig = z.infer<typeof appConfigSchema>;
@@ -20,6 +21,7 @@ export default registerAs('app', (): AppConfig => {
     JWT_PUBLIC_KEY: process.env.JWT_PUBLIC_KEY,
     JWT_PRIVATE_KEY: process.env.JWT_PRIVATE_KEY,
     JWT_EXPIRATION: process.env.JWT_EXPIRATION,
+    JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,
   } as const satisfies Record<keyof AppConfig, unknown>;
 
   return validateConfig(appConfigSchema, objectToValidate);

@@ -1,11 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
-  CreateUserData,
-  User,
   UsersRepositoryPort,
 } from '../../application/ports/users.repository.port';
+import { User } from '../../domain/aggregates/user.aggregate';
 import { DB_TOKEN, type DrizzleDb } from '../../../../app/database/types';
-import { UserDatabase, users } from '@chatty-nest/database';
+import { users } from '@chatty-nest/database';
 import { and, eq } from 'drizzle-orm';
 
 @Injectable()
@@ -15,32 +14,48 @@ export class UsersRepositoryImpl implements UsersRepositoryPort {
     private readonly db: DrizzleDb,
   ) {}
 
-  async create(data: CreateUserData): Promise<User> {
-    const now = new Date();
-    const [user] = await this.db
-      .insert(users)
-      .values({
-        id: data.id,
-        email: data.email,
-        name: data.name,
-        role: data.role ?? 'USER',
-        username: data.name.split('@')[0] ?? data.email,
-        displayName: data.name,
-        emailVerified: false,
-        banned: false,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning();
+  async save(user: User): Promise<User> {
+    const existing = await this.findById(user.id);
 
-    return this.toDomain(user);
+    if (!existing) {
+      await this.db.insert(users).values({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        username: user.email.split('@')[0] ?? user.email,
+        displayName: user.name,
+        emailVerified: user.emailVerified,
+        banned: user.banned,
+        image: user.image,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      });
+    } else {
+      await this.db
+        .update(users)
+        .set({
+          name: user.name,
+          email: user.email,
+          emailVerified: user.emailVerified,
+          image: user.image,
+          role: user.role,
+          banned: user.banned,
+          banReason: user.banReason,
+          banExpires: user.banExpires,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, user.id));
+    }
+
+    return user;
   }
 
   async findById(id: string): Promise<User | null> {
-    const [user] = await this.db.select().from(users).where(eq(users.id, id));
+    const [record] = await this.db.select().from(users).where(eq(users.id, id));
 
-    if (!user) return null;
-    return this.toDomain(user);
+    if (!record) return null;
+    return User.from(record);
   }
 
   async exists(id: string): Promise<boolean> {
@@ -51,28 +66,12 @@ export class UsersRepositoryImpl implements UsersRepositoryPort {
   }
 
   async existsAndActive(id: string): Promise<boolean> {
-    const [user] = await this.db
+    const [record] = await this.db
       .select()
       .from(users)
       .where(and(eq(users.id, id), eq(users.banned, false)));
 
-    if (!user) return false;
+    if (!record) return false;
     else return true;
-  }
-
-  private toDomain(record: UserDatabase): User {
-    return {
-      id: record.id,
-      name: record.name,
-      email: record.email,
-      emailVerified: record.emailVerified,
-      image: record.image,
-      role: record.role,
-      banned: record.banned ?? false,
-      banReason: record.banReason,
-      banExpires: record.banExpires,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-    };
   }
 }
