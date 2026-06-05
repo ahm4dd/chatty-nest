@@ -1,108 +1,141 @@
-# New Nx Repository
+# Chatty Nest
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+> A real-time chat platform — built as a DDD monolith, designed for distributed scale.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+![Proposed Design](./proposed_design.png)
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/js?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+## Description
 
-## Try the full Nx platform
+Chatty Nest is a real-time chat application currently in early development. It follows **Domain-Driven Design** and **Clean Architecture** principles, built on **NestJS** with **uwestjs** (uWebSockets.js adapter) for high-performance I/O.
 
-🚀 If you haven't connected to Nx Cloud yet, [complete your setup here](https://cloud.nx.app/setup/connect-workspace/guide). Get faster builds with remote caching, distributed task execution, and self-healing CI. [See how your workspace can benefit](#nx-cloud).
+The system is structured as a **monolith** with clear bounded contexts (auth, messaging, notifications, etc.) so each can be extracted into its own microservice when scaling demands.
 
-## Generate a library
+### Current
+- Auth module — register, login, JWT access + refresh tokens via httpOnly cookies, Argon2 password hashing
+- RBAC — role-based access control with DB-level checks (USER, ADMIN)
+- CLS — continuation-local storage for request-scoped auth context
+- PostgreSQL + Drizzle ORM
+- Domain events for cross-context communication
 
-```sh
-npx nx g @nx/js:lib packages/pkg1 --publishable --importPath=@chatty-nest/pkg1
-```
+### Planned
+- Real-time messaging via WebSockets
+- Message queues with idempotency guarantees
+- Caching layer
+- Rate limiting / throttling
+- Migration from monolith to distributed microservices
 
-## Run tasks
+## Motivation
 
-To build the library use:
+**Why uwestjs instead of Express?** — uwestjs wraps uWebSockets.js, offering significantly higher throughput and lower latency for IO-heavy workloads. Since the system will eventually handle persistent WebSocket connections for real-time chat, starting with uwestjs avoids a painful migration later.
 
-```sh
-npx nx build pkg1
-```
+**Monolith-first** — faster iteration, simpler deployment, easier reasoning. Each bounded context is a NestJS module with its own domain layer, so extracting it into a service later is a mechanical task, not an architectural one.
 
-To run any task with Nx use:
+**DDD + Clean Architecture** — business logic lives in domain aggregates and entities. Repositories handle persistence mapping. Application services orchestrate. This keeps the core framework-agnostic and testable.
 
-```sh
-npx nx <target> <project-name>
-```
-
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
-
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Versioning and releasing
-
-To version and release the library use
+## Project Structure
 
 ```
-npx nx release
+chatty-nest/
+├── apps/
+│   ├── api/              # NestJS application (uwestjs adapter)
+│   └── api-e2e/          # End-to-end tests
+├── packages/
+│   ├── database/         # Shared Drizzle schema (users, accounts, sessions, etc.)
+│   └── shared-utils/     # Shared utilities (config validation, etc.)
+├── docker/
+│   └── compose.yaml      # PostgreSQL 18.3-alpine
+└── ...
 ```
 
-Pass `--dry-run` to see what would happen without actually releasing the library.
+## Quick Start
 
-[Learn more about Nx release &raquo;](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### Prerequisites
+- Node.js 20+
+- pnpm (`npm install -g pnpm`)
+- Docker (for PostgreSQL)
 
-## Keep TypeScript project references up to date
+### Setup
 
-Nx automatically updates TypeScript [project references](https://www.typescriptlang.org/docs/handbook/project-references.html) in `tsconfig.json` files to ensure they remain accurate based on your project dependencies (`import` or `require` statements). This sync is automatically done when running tasks such as `build` or `typecheck`, which require updated references to function correctly.
+```bash
+# 1. Start PostgreSQL
+docker compose -f docker/compose.yaml up -d
 
-To manually trigger the process to sync the project graph dependencies information to the TypeScript project references, run the following command:
+# 2. Install dependencies
+pnpm install
 
-```sh
-npx nx sync
+# 3. Configure environment
+cp apps/api/.env.example apps/api/.env
 ```
 
-You can enforce that the TypeScript project references are always in the correct state when running in CI by adding a step to your CI job configuration that runs the following command:
+Generate RS256 keys and fill in `JWT_PUBLIC_KEY` / `JWT_PRIVATE_KEY` in `apps/api/.env`:
 
-```sh
-npx nx sync:check
+```bash
+openssl genpkey -algorithm RSA -out private.pem -pkeyopt rsa_keygen_bits:2048
+openssl rsa -pubout -in private.pem -out public.pem
+echo "JWT_PRIVATE_KEY=$(base64 -i private.pem | tr -d '\n')" >> apps/api/.env
+echo "JWT_PUBLIC_KEY=$(base64 -i public.pem | tr -d '\n')" >> apps/api/.env
+rm private.pem public.pem
 ```
 
-[Learn more about nx sync](https://nx.dev/reference/nx-commands#sync)
+Then:
 
-## Nx Cloud
+```bash
+# 4. Push database schema
+pnpm nx run api:db:push
 
-Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
-
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Set up CI (non-Github Actions CI)
-
-**Note:** This is only required if your CI provider is not GitHub Actions.
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
+# 5. Start dev server
+pnpm nx run api:serve
 ```
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+The server starts at `http://localhost:3000`.
 
-## Install Nx Console
+### Environment Variables
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+See `apps/api/.env.example` for the full template.
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+| Variable | Default | Required | Description |
+|---|---|---|---|
+| `NODE_ENV` | `development` | No | Runtime environment |
+| `PORT` | `3000` | No | Server port |
+| `DATABASE_URL` | — | Yes | PostgreSQL connection string |
+| `DATABASE_POOL_MIN` | `2` | No | Minimum pool connections |
+| `DATABASE_POOL_MAX` | `10` | No | Maximum pool connections |
+| `JWT_PUBLIC_KEY` | — | Yes | RS256 public key (base64, no newlines) |
+| `JWT_PRIVATE_KEY` | — | Yes | RS256 private key (base64, no newlines) |
+| `JWT_EXPIRATION` | `3600` | No | Access token TTL (seconds) |
+| `JWT_REFRESH_EXPIRES_IN` | `7d` | No | Refresh token TTL |
 
-## Useful links
+### Docker
 
-Learn more:
+```bash
+docker compose -f docker/compose.yaml up -d   # start PostgreSQL
+docker compose -f docker/compose.yaml down     # stop
+```
 
-- [Learn more about this workspace setup](https://nx.dev/nx-api/js?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### Useful Commands
 
-And join the Nx community:
+| Command | Description |
+|---|---|
+| `pnpm nx run api:serve` | Start dev server with watch |
+| `pnpm nx run api:build` | Production build |
+| `pnpm nx run api:lint` | Lint check |
+| `pnpm nx run api:test` | Run tests |
+| `pnpm nx run api:typecheck` | TypeScript type-check |
+| `pnpm nx run api:db:push` | Push Drizzle schema to database |
+| `pnpm nx run api:db:migrate` | Run Drizzle migrations |
+| `pnpm nx run api:db:studio` | Open Drizzle Studio GUI |
 
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Usage
+
+### API Documentation
+
+Once the server is running, visit **http://localhost:3000/api/reference** for interactive API documentation (Scalar UI).
+
+All endpoints are prefixed with `/api` (e.g., `POST /api/auth/register`).
+
+## Contributing
+
+1. Ensure `pnpm nx run api:lint` passes with no new errors
+2. Ensure `pnpm nx run api:typecheck` passes (0 errors)
+3. Write tests for new features
+4. Follow the existing DDD module structure
