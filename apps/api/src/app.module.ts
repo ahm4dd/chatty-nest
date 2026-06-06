@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AppController } from './app/app.controller';
 import { AppService } from './app/app.service';
 import { ConfigModule } from '@nestjs/config';
@@ -13,6 +13,7 @@ import { DomainEventsModule } from './app/events/domain-events.module';
 import { DocsModule } from './app/docs/docs.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ExceptionLoggingFilter } from './app/filters/exception-logging.filter';
+import { JwtAuthGuard } from './modules/auth/infrastructure/guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -40,6 +41,10 @@ import { ExceptionLoggingFilter } from './app/filters/exception-logging.filter';
     {
       provide: APP_FILTER,
       useClass: ExceptionLoggingFilter,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
     },
   ],
 })

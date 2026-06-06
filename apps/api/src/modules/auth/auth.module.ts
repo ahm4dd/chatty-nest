@@ -6,7 +6,6 @@ import { DrizzleModule } from '../../app/database/db.module';
 import { AuthController } from './presentation/controllers/auth.controller';
 import { AuthService } from './application/services/auth.service';
 import { JwtAuthStrategy } from './infrastructure/strategies/jwt.strategy';
-import { JwtAuthGuard } from './infrastructure/guards/jwt-auth.guard';
 import { RolesGuard } from './infrastructure/guards/roles.guard';
 import { UsersRepositoryImpl } from './infrastructure/repositories/users.repository';
 import { AccountsRepositoryImpl } from './infrastructure/repositories/accounts.repository';
@@ -30,7 +29,6 @@ import {
     { provide: PASSWORD_HASHER_TOKEN, useClass: Argon2PasswordHasher },
     AuthService,
     JwtAuthStrategy,
-    JwtAuthGuard,
     RolesGuard,
     UserBannedListener,
   ],

@@ -14,10 +14,10 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { ClsService } from 'nestjs-cls';
 import { RolesGuard } from '../../infrastructure/guards/roles.guard';
 import { Roles } from '../../../../shared-kernal/infrastructure/decorators/roles.decorator';
+import { isPublic } from '../../../../shared-kernal/infrastructure/decorators/public.decorator';
 import { AuthService } from '../../application/services/auth.service';
 import { RegisterDto } from '../dto/request/register.dto';
 import { LoginDto } from '../dto/request/login.dto';
@@ -29,7 +29,9 @@ import type { SessionsListResponseDto } from '../dto/response/sessions-list-resp
 import type { RevokeSessionResponseDto } from '../dto/response/revoke-session-response.dto';
 import { UwsRequest, UwsResponse } from 'uwestjs';
 import appConfig, { type AppConfig } from '../../../../app/config/app.config';
-import { RoleType } from '../../../../shared-kernal/domain/value-objects/role.vo';
+import type { AuthenticatedUser } from '../../infrastructure/interfaces/jwt.interface';
+
+type AuthenticatedRequest = UwsRequest & { user: AuthenticatedUser };
 
 @Controller('auth')
 export class AuthController {
@@ -39,6 +41,7 @@ export class AuthController {
     @Inject(appConfig.KEY) private readonly appConfig: AppConfig,
   ) {}
 
+  @isPublic()
   @Post('register')
   async register(
     @Body() dto: RegisterDto,
@@ -60,6 +63,7 @@ export class AuthController {
     return result;
   }
 
+  @isPublic()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
@@ -77,6 +81,7 @@ export class AuthController {
     return result;
   }
 
+  @isPublic()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
@@ -97,7 +102,6 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard('jwt'))
   async logout(
     @Req() req: UwsRequest,
     @Res({ passthrough: true }) res: UwsResponse,
@@ -118,70 +122,54 @@ export class AuthController {
   }
 
   @Get('me')
-  @UseGuards(AuthGuard('jwt'))
-  async me(): Promise<CurrentSessionResponseDto> {
-    const userId = this.cls.get<string>('userId');
-    const sessionId = this.cls.get<string>('sessionId');
-    const email = this.cls.get<string>('userEmail');
-    const role = this.cls.get<RoleType[]>('roles')?.[0] ?? 'USER';
+  async me(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<CurrentSessionResponseDto> {
+    const { id: userId, email, roles, sessionId } = req.user;
 
-    if (!userId || !sessionId || !email) {
-      throw new UnauthorizedException('Invalid authentication context');
-    }
-
-    return this.authService.getSession(sessionId, userId, email, role);
+    return this.authService.getSession(sessionId, userId, email, roles[0] ?? 'USER');
   }
 
   @Get('sessions')
-  @UseGuards(AuthGuard('jwt'))
-  async sessions(): Promise<SessionsListResponseDto> {
-    const userId = this.cls.get<string>('userId');
-    const sessionId = this.cls.get<string>('sessionId');
-
-    if (!userId || !sessionId) {
-      throw new UnauthorizedException('Invalid authentication context');
-    }
+  async sessions(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<SessionsListResponseDto> {
+    const { id: userId, sessionId } = req.user;
 
     return this.authService.listSessions(userId, sessionId);
   }
 
   @Delete('sessions/:sessionId')
-  @UseGuards(AuthGuard('jwt'))
   async revokeSession(
+    @Req() req: AuthenticatedRequest,
     @Param() params: RevokeSessionDto,
   ): Promise<RevokeSessionResponseDto> {
-    const userId = this.cls.get<string>('userId');
-    if (!userId) {
-      throw new UnauthorizedException('Invalid authentication context');
-    }
+    const { id: userId, sessionId: currentSessionId } = req.user;
 
     return this.authService.revokeSession(
       params.sessionId,
       userId,
-      this.cls.get<string>('sessionId') ?? '',
+      currentSessionId,
     );
   }
 
   @Delete('sessions')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(AuthGuard('jwt'))
-  async revokeAllSessions(): Promise<void> {
-    const userId = this.cls.get<string>('userId');
-    if (!userId) {
-      throw new UnauthorizedException('Invalid authentication context');
-    }
+  async revokeAllSessions(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<void> {
+    const { id: userId } = req.user;
 
     await this.authService.revokeAllSessions(userId);
   }
 
   @Put('password')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(AuthGuard('jwt'))
-  async changePassword(@Body() dto: ChangePasswordDto): Promise<void> {
-    const userId = this.cls.get<string>('userId');
-    if (!userId) {
-      throw new UnauthorizedException('Invalid authentication context');
-    }
+  async changePassword(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<void> {
+    const { id: userId } = req.user;
 
     await this.authService.changePassword(
       userId,
@@ -191,7 +179,7 @@ export class AuthController {
   }
 
   @Get('admin')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles('ADMIN')
   adminOnly(): { message: string } {
     return { message: 'Welcome, admin!' };
