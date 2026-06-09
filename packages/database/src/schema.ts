@@ -6,7 +6,7 @@
  * conflicts that arise from namespace imports and typeof inference.
  */
 
-import { users, accounts, sessions, verifications } from './schemas/index.ts';
+import { users, accounts, sessions, verifications } from './schemas/index.js';
 
 export const schema = {
   users,

@@ -3,8 +3,7 @@
   "compilerOptions": {
     "outDir": "out-tsc/@chatty-nest/api-e2e",
     "esModuleInterop": true,
-    "noUnusedLocals": false,
-    "noImplicitAny": false
+    "noUnusedLocals": false
   },
   "include": ["jest.config.ts", "src/**/*.ts"],
   "references": []

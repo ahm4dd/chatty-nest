@@ -1,1 +1,1 @@
-export * from './identity/index.ts';
+export * from './identity/index.js';

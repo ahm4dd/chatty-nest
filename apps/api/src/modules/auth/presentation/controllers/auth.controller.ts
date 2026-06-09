@@ -30,6 +30,7 @@ import type { RevokeSessionResponseDto } from '../dto/response/revoke-session-re
 import { UwsRequest, UwsResponse } from 'uwestjs';
 import appConfig, { type AppConfig } from '../../../../app/config/app.config';
 import type { AuthenticatedUser } from '../../infrastructure/interfaces/jwt.interface';
+import { parseMaxAge } from '../../../../shared-kernal/application/utils/parse-expiration';
 
 type AuthenticatedRequest = UwsRequest & { user: AuthenticatedUser };
 
@@ -58,9 +59,10 @@ export class AuthController {
       },
     );
 
-    this.setRefreshCookie(res, result.refreshToken);
+    const { refreshToken, ...response } = result;
+    this.setRefreshCookie(res, refreshToken);
 
-    return result;
+    return response;
   }
 
   @isPublic()
@@ -76,9 +78,10 @@ export class AuthController {
       userAgent: req.headers['user-agent'] as string,
     });
 
-    this.setRefreshCookie(res, result.refreshToken);
+    const { refreshToken, ...response } = result;
+    this.setRefreshCookie(res, refreshToken);
 
-    return result;
+    return response;
   }
 
   @isPublic()
@@ -93,11 +96,12 @@ export class AuthController {
       throw new UnauthorizedException('Refresh token not found');
     }
 
-    const result = await this.authService.refreshToken(refreshToken);
+    const result = await this.authService.rotateSession(refreshToken);
 
-    this.setRefreshCookie(res, result.refreshToken);
+    const { refreshToken: newRefreshToken, ...response } = result;
+    this.setRefreshCookie(res, newRefreshToken);
 
-    return result;
+    return response;
   }
 
   @Post('logout')
@@ -106,10 +110,10 @@ export class AuthController {
     @Req() req: UwsRequest,
     @Res({ passthrough: true }) res: UwsResponse,
   ): Promise<{ success: boolean }> {
-    const refreshToken = req.cookies.refreshToken;
-    const success = refreshToken
-      ? await this.authService.logout(refreshToken)
-      : false;
+    const token = req.cookies.refreshToken;
+    if (token) {
+      await this.authService.logout(token);
+    }
 
     res.clearCookie('refreshToken', {
       path: '/',
@@ -118,7 +122,7 @@ export class AuthController {
       sameSite: 'lax',
     });
 
-    return { success };
+    return { success: true };
   }
 
   @Get('me')
@@ -200,22 +204,6 @@ export class AuthController {
   }
 
   private get refreshMaxAgeMs(): number {
-    return this.parseMaxAge(this.appConfig.JWT_REFRESH_EXPIRES_IN);
-  }
-
-  private parseMaxAge(expiresIn: string): number {
-    const match = /^(\d+)([smhd])$/.exec(expiresIn);
-    if (!match) return 7 * 24 * 60 * 60 * 1000;
-
-    const value = Number.parseInt(match[1] as string, 10);
-    const unit = match[2] as string;
-    const multipliers: Record<string, number> = {
-      s: 1000,
-      m: 60 * 1000,
-      h: 60 * 60 * 1000,
-      d: 24 * 60 * 60 * 1000,
-    };
-
-    return value * (multipliers[unit] ?? 7 * 24 * 60 * 60 * 1000);
+    return parseMaxAge(this.appConfig.JWT_REFRESH_EXPIRES_IN);
   }
 }

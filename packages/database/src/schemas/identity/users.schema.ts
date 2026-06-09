@@ -64,7 +64,7 @@ export const users = pgTable(
     // ---- Better Auth admin plugin fields ----
 
     role: userRoleEnum('role').notNull().default('USER'),
-    banned: boolean('banned').default(false),
+    banned: boolean('banned').notNull().default(false),
     banReason: text('ban_reason'),
     banExpires: timestamp('ban_expires'),
 

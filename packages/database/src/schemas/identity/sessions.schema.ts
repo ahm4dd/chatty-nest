@@ -1,4 +1,4 @@
-import { users } from './users.schema.ts';
+import { users } from './users.schema.js';
 import {
   index,
   pgTable,
@@ -10,11 +10,11 @@ import {
 /**
  * Sessions table definition
  *
- * Represents an active session for a user. Supports tracking of session tokens, expiration, and device info.
+ * Represents an active session for a user. Supports tracking of hashed refresh tokens, expiration, and device info.
  * Follows Better Auth conventions for future migration compatibility.
  *
  * Better Auth compatible fields:
- *   userId, token, expiresAt, ipAddress, userAgent
+ *   userId, refreshTokenHash, expiresAt, ipAddress, userAgent
  *
  * Extended fields (business-specific, compatible with Better Auth additionalFields):
  *   impersonatedBy (tracks if the session was created via impersonation by an admin)
@@ -29,8 +29,8 @@ export const sessions = pgTable(
         onDelete: 'cascade',
       }),
 
-    // Better Auth compatible fields
-    token: text('session_token').notNull().unique(),
+    // TODO: Better auth compatibility: rename to refreshTokenHash to token (session_token)
+    refreshTokenHash: text('refresh_token_hash').notNull().unique(),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
 
     // This field is used to track if the session was created via impersonation (admin acting as user)
@@ -50,7 +50,7 @@ export const sessions = pgTable(
   },
   (table) => [
     index('session_user_id_idx').on(table.userId),
-    uniqueIndex('session_token_idx').on(table.token),
+    uniqueIndex('session_refresh_token_hash_idx').on(table.refreshTokenHash),
     index('session_expires_at_idx').on(table.expiresAt),
   ],
 );

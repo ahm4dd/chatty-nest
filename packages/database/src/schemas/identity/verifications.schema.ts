@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, index } from 'drizzle-orm/pg-core';
+import { users } from './users.schema.js';
 
 /**
  * Verifications table definition
@@ -10,7 +11,11 @@ export const verifications = pgTable(
   {
     id: text('id').primaryKey(),
 
-    userId: text('user_id').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, {
+        onDelete: 'cascade',
+      }),
 
     // The type of verification (e.g., 'email', 'phone')
     identifier: text('identifier').notNull(),
@@ -21,8 +26,13 @@ export const verifications = pgTable(
     // When the verification expires
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
 
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (table) => [index('verifications_identifier_idx').on(table.identifier)],
 );

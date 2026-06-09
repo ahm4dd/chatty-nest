@@ -1,7 +1,10 @@
+import { Logger } from '@nestjs/common';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { DrizzleDb, DrizzleModuleOptions } from './types';
 import { schema } from '@chatty-nest/database';
+
+const logger = new Logger('Database');
 
 export async function createDrizzleInstance(options: DrizzleModuleOptions) {
   const pool = new Pool({
@@ -16,14 +19,14 @@ export async function createDrizzleInstance(options: DrizzleModuleOptions) {
   // Test the connection immediately
   return testDatabaseConnection(drizzleInstance)
     .then(() => {
-      console.log('Database connection established successfully');
+      logger.log('Database connection established successfully');
       return drizzleInstance;
     })
     .catch((error) => {
-      console.error('Failed to establish database connection:', error);
+      logger.error('Failed to establish database connection', error);
       // Clean up the pool if the connection test fails
       pool.end().catch((endError) => {
-        console.error(
+        logger.error(
           'Failed to close database pool after connection failure:',
           endError,
         );

@@ -8,6 +8,20 @@
       "when": 1778959129478,
       "tag": "0000_classy_skullbuster",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780830000000,
+      "tag": "0001_hash_refresh_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780841172593,
+      "tag": "0002_aberrant_spyke",
+      "breakpoints": true
     }
   ]
 }

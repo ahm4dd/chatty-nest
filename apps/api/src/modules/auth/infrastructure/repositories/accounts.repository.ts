@@ -15,31 +15,16 @@ export class AccountsRepositoryImpl implements AccountsRepositoryPort {
 
   async save(account: Account, tx?: Tx): Promise<void> {
     const db = tx ?? this.db;
-    const data = {
-      id: account.id,
-      userId: account.userId,
-      providerId: account.providerId,
-      accountId: account.accountId,
-      passwordHash: account.passwordHash,
-      accessToken: account.accessToken,
-      refreshToken: account.refreshToken,
-      accessTokenExpiresAt: account.accessTokenExpiresAt,
-      refreshTokenExpiresAt: account.refreshTokenExpiresAt,
-      idToken: account.idToken,
-      scope: account.scope,
-      updatedAt: account.updatedAt,
-    };
+    const record = account.toRecord();
 
-    const existing = await this.findById(account.id, tx);
-
-    if (existing) {
-      await db.update(accounts).set(data).where(eq(accounts.id, account.id));
-    } else {
-      await db.insert(accounts).values({
-        ...data,
-        createdAt: account.createdAt,
-      });
-    }
+    await db.insert(accounts).values({
+      ...record,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+    }).onConflictDoUpdate({
+      target: accounts.id,
+      set: { ...record, updatedAt: new Date() },
+    });
   }
 
   async findById(id: string, tx?: Tx): Promise<Account | null> {

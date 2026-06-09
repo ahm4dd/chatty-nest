@@ -5,7 +5,7 @@ import {
 import { User } from '../../domain/aggregates/user.aggregate';
 import { DB_TOKEN, type DrizzleDb, type Tx } from '../../../../app/database/types';
 import { users } from '@chatty-nest/database';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 @Injectable()
 export class UsersRepositoryImpl implements UsersRepositoryPort {
@@ -16,40 +16,51 @@ export class UsersRepositoryImpl implements UsersRepositoryPort {
 
   async save(user: User, tx?: Tx): Promise<User> {
     const db = tx ?? this.db;
-    const existing = await this.findById(user.id, tx);
+    const record = user.toRecord();
 
-    if (!existing) {
-      await db.insert(users).values({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        username: user.email.split('@')[0] ?? user.email,
-        displayName: user.name,
-        emailVerified: user.emailVerified,
-        banned: user.banned,
-        image: user.image,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      });
-    } else {
-      await db
-        .update(users)
-        .set({
-          name: user.name,
-          email: user.email,
-          emailVerified: user.emailVerified,
-          image: user.image,
-          role: user.role,
-          banned: user.banned,
-          banReason: user.banReason,
-          banExpires: user.banExpires,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, user.id));
-    }
+    const base = user.email.split('@')[0] ?? user.email;
+    const username = await this.#generateUniqueUsername(base, db);
+
+    await db.insert(users).values({
+      ...record,
+      username,
+      displayUsername: username,
+      displayName: user.name,
+    }).onConflictDoUpdate({
+      target: users.id,
+      set: {
+        name: record.name,
+        email: record.email,
+        emailVerified: record.emailVerified,
+        image: record.image,
+        role: record.role,
+        banned: record.banned,
+        banReason: record.banReason,
+        banExpires: record.banExpires,
+        updatedAt: new Date(),
+      },
+    });
 
     return user;
+  }
+
+  async #generateUniqueUsername(base: string, db: DrizzleDb | Tx): Promise<string> {
+    let username = base;
+    let counter = 0;
+
+    while (counter < 10) {
+      const [existing] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.username, username))
+        .limit(1);
+
+      if (!existing) return username;
+      counter++;
+      username = `${base}${counter}`;
+    }
+
+    throw new Error('Unable to generate unique username');
   }
 
   async findById(id: string, tx?: Tx): Promise<User | null> {
@@ -68,12 +79,8 @@ export class UsersRepositoryImpl implements UsersRepositoryPort {
   }
 
   async existsAndActive(id: string): Promise<boolean> {
-    const [record] = await this.db
-      .select()
-      .from(users)
-      .where(and(eq(users.id, id), eq(users.banned, false)));
+    const user = await this.findById(id);
 
-    if (!record) return false;
-    else return true;
+    return user?.isActive() ?? false;
   }
 }

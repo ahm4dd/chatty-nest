@@ -235,4 +235,22 @@ export class Account extends AggregateRoot {
   get updatedAt(): Date {
     return this.#updatedAt;
   }
+
+  toRecord(): AccountReconstitutionRecord {
+    return {
+      id: this.#id,
+      userId: this.#userId,
+      providerId: this.#providerId,
+      accountId: this.#accountId,
+      passwordHash: this.#passwordHash,
+      accessToken: this.#accessToken,
+      refreshToken: this.#refreshToken,
+      accessTokenExpiresAt: this.#accessTokenExpiresAt,
+      refreshTokenExpiresAt: this.#refreshTokenExpiresAt,
+      idToken: this.#idToken,
+      scope: this.#scope,
+      createdAt: this.#createdAt,
+      updatedAt: this.#updatedAt,
+    };
+  }
 }

@@ -8,6 +8,7 @@ import { UwsPlatformAdapter } from 'uwestjs';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { DocsService } from './app/docs/docs.service';
+import appConfig, { type AppConfig } from './app/config/app.config';
 
 async function bootstrap() {
   const httpAdapter = new UwsPlatformAdapter();
@@ -30,6 +31,7 @@ async function bootstrap() {
     .setDescription('Chat API description')
     .setVersion('1.0')
     .addTag('Chat')
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
@@ -37,7 +39,7 @@ async function bootstrap() {
   // Inject into the service — fully typed, no globals
   app.get(DocsService).setDocument(document);
 
-  const port = Number(process.env.PORT ?? 3000);
+  const { PORT: port } = app.get<AppConfig>(appConfig.KEY);
 
   // app.listen(port);
 

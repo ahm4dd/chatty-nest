@@ -1,7 +1,7 @@
 export class Session {
   readonly #id: string;
   readonly #userId: string;
-  readonly #token: string;
+  readonly #refreshTokenHash: string;
   readonly #expiresAt: Date;
   readonly #ipAddress: string | null;
   readonly #userAgent: string | null;
@@ -10,7 +10,7 @@ export class Session {
   private constructor(
     id: string,
     userId: string,
-    token: string,
+    refreshTokenHash: string,
     expiresAt: Date,
     ipAddress: string | null,
     userAgent: string | null,
@@ -18,7 +18,7 @@ export class Session {
   ) {
     this.#id = id;
     this.#userId = userId;
-    this.#token = token;
+    this.#refreshTokenHash = refreshTokenHash;
     this.#expiresAt = expiresAt;
     this.#ipAddress = ipAddress;
     this.#userAgent = userAgent;
@@ -28,24 +28,24 @@ export class Session {
   static create(
     id: string,
     userId: string,
-    token: string,
+    refreshTokenHash: string,
     expiresAt: Date,
     ipAddress?: string,
     userAgent?: string,
   ): Session {
-    return new Session(id, userId, token, expiresAt, ipAddress ?? null, userAgent ?? null, new Date());
+    return new Session(id, userId, refreshTokenHash, expiresAt, ipAddress ?? null, userAgent ?? null, new Date());
   }
 
   static reconstitute(
     id: string,
     userId: string,
-    token: string,
+    refreshTokenHash: string,
     expiresAt: Date,
     ipAddress: string | null,
     userAgent: string | null,
     createdAt: Date,
   ): Session {
-    return new Session(id, userId, token, expiresAt, ipAddress, userAgent, createdAt);
+    return new Session(id, userId, refreshTokenHash, expiresAt, ipAddress, userAgent, createdAt);
   }
 
   get isValid(): boolean {
@@ -68,8 +68,8 @@ export class Session {
     return this.#userId;
   }
 
-  get token(): string {
-    return this.#token;
+  get refreshTokenHash(): string {
+    return this.#refreshTokenHash;
   }
 
   get expiresAt(): Date {

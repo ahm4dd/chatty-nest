@@ -23,10 +23,22 @@ import { Account } from '../../domain/aggregates/account.aggregate';
 import { Session } from '../../domain/entities/session.entity';
 import { DomainEventsPublisher } from '../../../../app/events/domain-events-publisher.service';
 import appConfig, { type AppConfig } from '../../../../app/config/app.config';
+import { parseExpiration } from '../../../../shared-kernal/application/utils/parse-expiration';
+import { generateRefreshToken, hashRefreshToken } from '../utils/refresh-token';
 
 interface DeviceContext {
   ipAddress?: string;
   userAgent?: string;
+}
+
+interface AuthResult {
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: string;
+    email: string;
+    role: RoleType;
+  };
 }
 
 @Injectable()
@@ -53,7 +65,7 @@ export class AuthService {
     password: string,
     name: string,
     deviceContext?: DeviceContext,
-  ) {
+  ): Promise<AuthResult> {
     const passwordHash = await this.passwordHasher.hash(password);
 
     const { userId, role, sessionId, refreshToken } = await this.db.transaction(async (tx) => {
@@ -93,7 +105,7 @@ export class AuthService {
     email: string,
     password: string,
     deviceContext?: DeviceContext,
-  ) {
+  ): Promise<AuthResult> {
     const identity = await this.accountsRepository.findByProvider('email', email);
     if (!identity) {
       throw new UnauthorizedException({
@@ -107,7 +119,14 @@ export class AuthService {
       });
     }
 
-    const isValid = await this.passwordHasher.verify(password, identity.passwordHash!);
+    const passwordHash = identity.passwordHash;
+    if (!passwordHash) {
+      throw new UnauthorizedException({
+        message: 'Invalid email or password',
+      });
+    }
+
+    const isValid = await this.passwordHasher.verify(password, passwordHash);
     if (!isValid) {
       throw new UnauthorizedException({
         message: 'Invalid email or password',
@@ -121,9 +140,13 @@ export class AuthService {
       });
     }
 
-    const { sessionId, refreshToken } = await this.db.transaction(async (tx) => {
-      return this.createSession(user.id, deviceContext, tx);
-    });
+    if (!user.isActive()) {
+      throw new UnauthorizedException({
+        message: 'Account is banned',
+      });
+    }
+
+    const { sessionId, refreshToken } = await this.createSession(user.id, deviceContext);
 
     const accessToken = this.jwtService.sign({
       sub: user.id,
@@ -135,9 +158,10 @@ export class AuthService {
     return { accessToken, refreshToken, user: { id: user.id, email, role: user.role } };
   }
 
-  async refreshToken(refreshToken: string) {
+  async rotateSession(refreshToken: string): Promise<AuthResult> {
+    const refreshTokenHash = hashRefreshToken(refreshToken);
     const { userId, email, role, sessionId, newRefreshToken } = await this.db.transaction(async (tx) => {
-      const session = await this.sessionsRepository.findByToken(refreshToken, tx);
+      const session = await this.sessionsRepository.findByRefreshTokenHash(refreshTokenHash, tx);
       if (!session?.isValid) {
         throw new UnauthorizedException({
           message: 'Invalid or expired refresh token',
@@ -150,6 +174,12 @@ export class AuthService {
       if (!user) {
         throw new UnauthorizedException({
           message: 'User not found',
+        });
+      }
+
+      if (!user.isActive()) {
+        throw new UnauthorizedException({
+          message: 'Account is banned',
         });
       }
 
@@ -169,7 +199,9 @@ export class AuthService {
   }
 
   async logout(refreshToken: string): Promise<boolean> {
-    const session = await this.sessionsRepository.findByToken(refreshToken);
+    const session = await this.sessionsRepository.findByRefreshTokenHash(
+      hashRefreshToken(refreshToken),
+    );
     if (!session) return false;
     return this.sessionsRepository.delete(session.id);
   }
@@ -258,7 +290,14 @@ export class AuthService {
       });
     }
 
-    const isValid = await this.passwordHasher.verify(currentPassword, emailIdentity.passwordHash!);
+    const currentPasswordHash = emailIdentity.passwordHash;
+    if (!currentPasswordHash) {
+      throw new UnauthorizedException({
+        message: 'Current password is incorrect',
+      });
+    }
+
+    const isValid = await this.passwordHasher.verify(currentPassword, currentPasswordHash);
     if (!isValid) {
       throw new UnauthorizedException({
         message: 'Current password is incorrect',
@@ -280,14 +319,15 @@ export class AuthService {
     deviceContext?: DeviceContext,
     tx?: Tx,
   ) {
-    const refreshToken = randomUUID();
-    const expiresAt = this.parseExpiration(this.appConfig.JWT_REFRESH_EXPIRES_IN);
+    const refreshToken = generateRefreshToken();
+    const refreshTokenHash = hashRefreshToken(refreshToken);
+    const expiresAt = parseExpiration(this.appConfig.JWT_REFRESH_EXPIRES_IN);
 
     const sessionId = randomUUID();
     const session = Session.create(
       sessionId,
       userId,
-      refreshToken,
+      refreshTokenHash,
       expiresAt,
       deviceContext?.ipAddress,
       deviceContext?.userAgent,
@@ -297,28 +337,4 @@ export class AuthService {
     return { sessionId, refreshToken };
   }
 
-  private parseExpiration(expiresIn: string): Date {
-    const now = new Date();
-    const match = /^(\d+)([smhd])$/.exec(expiresIn);
-
-    if (!match) {
-      return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    }
-
-    const value = Number.parseInt(match[1] as string, 10);
-    const unit = match[2] as string;
-    const multipliers: Record<string, number> = {
-      s: 1000,
-      m: 60 * 1000,
-      h: 60 * 60 * 1000,
-      d: 24 * 60 * 60 * 1000,
-    };
-
-    const multiplier = multipliers[unit];
-    if (!multiplier) {
-      return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    }
-
-    return new Date(now.getTime() + value * multiplier);
-  }
 }

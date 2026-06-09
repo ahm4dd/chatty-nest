@@ -2,7 +2,9 @@
 import { Controller, Get, Header } from '@nestjs/common';
 import { DocsService } from './docs.service';
 import { type OpenAPIObject } from '@nestjs/swagger';
+import { isPublic } from '../../shared-kernal/infrastructure/decorators/public.decorator';
 
+@isPublic()
 @Controller()
 export class DocsController {
   constructor(private readonly docsService: DocsService) {}
@@ -27,7 +29,7 @@ export class DocsController {
         <body>
           <script
             id="api-reference"
-            data-url="/openapi.json"
+            data-url="/api/openapi.json"
           ></script>
           <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
         </body>

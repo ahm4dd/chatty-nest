@@ -55,5 +55,8 @@ test-output
 
 # TypeScript declaration build artifacts
 *.d.ts.map
+apps/api-e2e/src/**/*.d.ts
 packages/database/src/**/*.d.ts
+packages/database/drizzle.config.d.ts
+packages/shared-utils/src/**/*.d.ts
 *.tsbuildinfo

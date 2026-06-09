@@ -1,3 +1,3 @@
-export * from './schemas/index.ts';
-export { schema } from './schema.ts';
-export type { Schema } from './schema.ts';
+export * from './schemas/index.js';
+export { schema } from './schema.js';
+export type { Schema } from './schema.js';

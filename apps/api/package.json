@@ -87,35 +87,29 @@
       "db:generate": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "drizzle-kit generate",
-          "cwd": "apps/api"
+          "command": "drizzle-kit generate --config=drizzle.config.ts",
+          "cwd": "packages/database"
         }
       },
       "db:migrate": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "drizzle-kit migrate --config={args.configFile}",
-          "cwd": "apps/api",
-          "args": [
-            "--configFile=drizzle.config.ts"
-          ]
+          "command": "drizzle-kit migrate --config=drizzle.config.ts",
+          "cwd": "packages/database"
         }
       },
       "db:push": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "drizzle-kit push --config={args.configFile}",
-          "cwd": "apps/api",
-          "args": [
-            "--configFile=drizzle.config.ts"
-          ]
+          "command": "drizzle-kit push --config=drizzle.config.ts",
+          "cwd": "packages/database"
         }
       },
       "db:studio": {
         "executor": "nx:run-commands",
         "options": {
           "command": "drizzle-kit studio",
-          "cwd": "apps/api"
+          "cwd": "packages/database"
         }
       },
       "db:seed": {

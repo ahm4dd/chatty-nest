@@ -17,26 +17,20 @@ export class SessionsRepositoryImpl implements SessionsRepositoryPort {
     const data = {
       id: session.id,
       userId: session.userId,
-      token: session.token,
+      refreshTokenHash: session.refreshTokenHash,
       expiresAt: session.expiresAt,
       ipAddress: session.ipAddress,
       userAgent: session.userAgent,
     };
 
-    const existing = await this.findById(session.id, tx);
-
-    if (existing) {
-      await db
-        .update(sessions)
-        .set({ ...data, updatedAt: new Date() })
-        .where(eq(sessions.id, session.id));
-    } else {
-      await db.insert(sessions).values({
-        ...data,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-    }
+    await db.insert(sessions).values({
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }).onConflictDoUpdate({
+      target: sessions.id,
+      set: { ...data, updatedAt: new Date() },
+    });
   }
 
   async findById(id: string, tx?: Tx): Promise<Session | null> {
@@ -51,12 +45,12 @@ export class SessionsRepositoryImpl implements SessionsRepositoryPort {
     return this.toDomain(record);
   }
 
-  async findByToken(token: string, tx?: Tx): Promise<Session | null> {
+  async findByRefreshTokenHash(refreshTokenHash: string, tx?: Tx): Promise<Session | null> {
     const db = tx ?? this.db;
     const [record] = await db
       .select()
       .from(sessions)
-      .where(eq(sessions.token, token))
+      .where(eq(sessions.refreshTokenHash, refreshTokenHash))
       .limit(1);
 
     if (!record) return null;
@@ -93,7 +87,7 @@ export class SessionsRepositoryImpl implements SessionsRepositoryPort {
     return Session.reconstitute(
       record.id,
       record.userId,
-      record.token,
+      record.refreshTokenHash,
       record.expiresAt,
       record.ipAddress,
       record.userAgent,
