@@ -5,6 +5,7 @@ import type { Schema } from '@chatty-nest/database';
 import { Pool } from 'pg';
 
 export const DB_TOKEN = Symbol('DB_TOKEN');
+export const DRIZZLE_CONNECTION_TOKEN = Symbol('DRIZZLE_CONNECTION_TOKEN');
 
 export type DrizzleDb = NodePgDatabase<Schema> & {
   $client: Pool;

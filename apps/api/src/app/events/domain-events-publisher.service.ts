@@ -7,6 +7,10 @@ import { DomainEvent } from '../../shared-kernal/domain/events/domain.event';
 export class DomainEventsPublisher {
   constructor(private readonly eventEmitter: EventEmitter2) {}
 
+  /**
+   * Publish only after the transaction that persisted the aggregate commits.
+   * Event listeners may perform side effects and should not observe uncommitted state.
+   */
   async publishEventsForAggregate(aggregate: AggregateRoot) {
     const events = aggregate.getEvents();
     for (const event of events) {

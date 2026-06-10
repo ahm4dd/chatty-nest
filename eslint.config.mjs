@@ -5,7 +5,14 @@ export default [
   ...nx.configs['flat/typescript'],
   ...nx.configs['flat/javascript'],
   {
-    ignores: ['**/dist', '**/out-tsc'],
+    ignores: [
+      '**/dist',
+      '**/out-tsc',
+      'apps/api-e2e/src/**/*.d.ts',
+      'packages/database/src/**/*.d.ts',
+      'packages/database/drizzle.config.d.ts',
+      'packages/shared-utils/src/**/*.d.ts',
+    ],
   },
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],

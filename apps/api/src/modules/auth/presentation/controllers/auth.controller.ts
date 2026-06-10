@@ -12,10 +12,8 @@ import {
   Req,
   Res,
   UnauthorizedException,
-  UseGuards,
 } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
-import { RolesGuard } from '../../infrastructure/guards/roles.guard';
 import { Roles } from '../../../../shared-kernal/infrastructure/decorators/roles.decorator';
 import { isPublic } from '../../../../shared-kernal/infrastructure/decorators/public.decorator';
 import { AuthService } from '../../application/services/auth.service';
@@ -183,7 +181,6 @@ export class AuthController {
   }
 
   @Get('admin')
-  @UseGuards(RolesGuard)
   @Roles('ADMIN')
   adminOnly(): { message: string } {
     return { message: 'Welcome, admin!' };

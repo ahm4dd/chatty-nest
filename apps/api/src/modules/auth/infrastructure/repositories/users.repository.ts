@@ -1,4 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { randomBytes } from 'node:crypto';
+
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import {
   UsersRepositoryPort,
 } from '../../application/ports/users.repository.port';
@@ -6,6 +8,10 @@ import { User } from '../../domain/aggregates/user.aggregate';
 import { DB_TOKEN, type DrizzleDb, type Tx } from '../../../../app/database/types';
 import { users } from '@chatty-nest/database';
 import { eq } from 'drizzle-orm';
+
+const MAX_USERNAME_INSERT_ATTEMPTS = 10;
+const DETERMINISTIC_USERNAME_ATTEMPTS = 3;
+const UNIQUE_VIOLATION_CODE = '23505';
 
 @Injectable()
 export class UsersRepositoryImpl implements UsersRepositoryPort {
@@ -18,49 +24,47 @@ export class UsersRepositoryImpl implements UsersRepositoryPort {
     const db = tx ?? this.db;
     const record = user.toRecord();
 
-    const base = user.email.split('@')[0] ?? user.email;
-    const username = await this.#generateUniqueUsername(base, db);
+    const updated = await db.update(users).set({
+      name: record.name,
+      email: record.email,
+      username: record.username,
+      displayUsername: record.displayUsername,
+      displayName: record.displayName,
+      bio: record.bio,
+      preferences: record.preferences,
+      emailVerified: record.emailVerified,
+      image: record.image,
+      role: record.role,
+      banned: record.banned,
+      banReason: record.banReason,
+      banExpires: record.banExpires,
+      updatedAt: new Date(),
+    }).where(eq(users.id, user.id)).returning({ id: users.id });
 
-    await db.insert(users).values({
-      ...record,
-      username,
-      displayUsername: username,
-      displayName: user.name,
-    }).onConflictDoUpdate({
-      target: users.id,
-      set: {
-        name: record.name,
-        email: record.email,
-        emailVerified: record.emailVerified,
-        image: record.image,
-        role: record.role,
-        banned: record.banned,
-        banReason: record.banReason,
-        banExpires: record.banExpires,
-        updatedAt: new Date(),
-      },
-    });
+    if (updated.length > 0) return user;
 
-    return user;
-  }
+    const usernameBase = record.username;
 
-  async #generateUniqueUsername(base: string, db: DrizzleDb | Tx): Promise<string> {
-    let username = base;
-    let counter = 0;
+    for (let attempt = 0; attempt < MAX_USERNAME_INSERT_ATTEMPTS; attempt++) {
+      const username = createUsernameCandidate(usernameBase, attempt);
+      const inserted = await db.insert(users).values({
+        ...record,
+        username,
+        displayUsername: username,
+      }).onConflictDoNothing({
+        target: users.username,
+      }).returning({ id: users.id }).catch((error: unknown) => {
+        if (isUniqueConstraintViolation(error)) {
+          throw new ConflictException('User already exists');
+        }
 
-    while (counter < 10) {
-      const [existing] = await db
-        .select({ id: users.id })
-        .from(users)
-        .where(eq(users.username, username))
-        .limit(1);
+        throw error;
+      });
 
-      if (!existing) return username;
-      counter++;
-      username = `${base}${counter}`;
+      if (inserted.length > 0) return user;
     }
 
-    throw new Error('Unable to generate unique username');
+    throw new ConflictException('Unable to generate unique username');
   }
 
   async findById(id: string, tx?: Tx): Promise<User | null> {
@@ -83,4 +87,22 @@ export class UsersRepositoryImpl implements UsersRepositoryPort {
 
     return user?.isActive() ?? false;
   }
+}
+
+function createUsernameCandidate(base: string, attempt: number): string {
+  if (attempt === 0) return base;
+  if (attempt < DETERMINISTIC_USERNAME_ATTEMPTS) {
+    return `${base}${attempt}`;
+  }
+
+  return `${base}-${randomBytes(3).toString('hex')}`;
+}
+
+function isUniqueConstraintViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === UNIQUE_VIOLATION_CODE
+  );
 }

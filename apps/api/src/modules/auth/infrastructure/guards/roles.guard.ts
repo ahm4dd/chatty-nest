@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/commo
 import { Reflector } from '@nestjs/core';
 import { RoleType } from '../../../../shared-kernal/domain/value-objects/role.vo';
 import { hasRequiredRole } from '../../../../shared-kernal/domain/value-objects/role.vo';
+import { ROLES_KEY } from '../../../../shared-kernal/infrastructure/decorators/roles.decorator';
 import { USERS_REPOSITORY_TOKEN } from '../../application/ports/tokens';
 import type { UsersRepositoryPort } from '../../application/ports/users.repository.port';
 
@@ -14,7 +15,7 @@ export class RolesGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredRoles = this.reflector.getAllAndOverride<RoleType[]>('roles', [
+    const requiredRoles = this.reflector.getAllAndOverride<RoleType[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
@@ -28,6 +29,8 @@ export class RolesGuard implements CanActivate {
     const user = await this.usersRepository.findById(userId);
     if (!user) return false;
 
-    return hasRequiredRole(user.role, requiredRoles[0]);
+    return requiredRoles.some((requiredRole) =>
+      hasRequiredRole(user.role, requiredRole),
+    );
   }
 }

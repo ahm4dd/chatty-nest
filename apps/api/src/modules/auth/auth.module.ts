@@ -1,4 +1,5 @@
 import { Global, Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import appConfig, { AppConfig } from '../../app/config/app.config';
@@ -11,6 +12,7 @@ import { UsersRepositoryImpl } from './infrastructure/repositories/users.reposit
 import { AccountsRepositoryImpl } from './infrastructure/repositories/accounts.repository';
 import { SessionsRepositoryImpl } from './infrastructure/repositories/sessions.repository';
 import { Argon2PasswordHasher } from './infrastructure/hasher/argon2-password-hasher';
+import { JwtAuthGuard } from './infrastructure/guards/jwt-auth.guard';
 import { UserBannedListener } from './application/listeners/user-banned.listener';
 import {
   USERS_REPOSITORY_TOKEN,
@@ -27,9 +29,16 @@ import {
     { provide: SESSIONS_REPOSITORY_TOKEN, useClass: SessionsRepositoryImpl },
     { provide: ACCOUNTS_REPOSITORY_TOKEN, useClass: AccountsRepositoryImpl },
     { provide: PASSWORD_HASHER_TOKEN, useClass: Argon2PasswordHasher },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
     AuthService,
     JwtAuthStrategy,
-    RolesGuard,
     UserBannedListener,
   ],
   imports: [

@@ -24,7 +24,7 @@ describe('AuthService refresh sessions', () => {
       transaction: jest.fn(async <T>(callback: (tx: Tx) => Promise<T>) =>
         callback({} as Tx),
       ),
-    } as unknown as DrizzleDb;
+    } as unknown as jest.Mocked<DrizzleDb>;
 
     const usersRepository = {
       save: jest.fn(async (user) => user),
@@ -62,7 +62,7 @@ describe('AuthService refresh sessions', () => {
 
     const domainEventsPublisher = {
       publishEventsForAggregate: jest.fn(async () => undefined),
-    } as unknown as DomainEventsPublisher;
+    } as unknown as jest.Mocked<DomainEventsPublisher>;
 
     const service = new AuthService(
       db,
@@ -77,8 +77,10 @@ describe('AuthService refresh sessions', () => {
 
     return {
       service,
+      db,
       accountsRepository,
       sessionsRepository,
+      domainEventsPublisher,
     };
   }
 
@@ -94,6 +96,50 @@ describe('AuthService refresh sessions', () => {
     expect(result.refreshToken).toBeDefined();
     expect(savedSession?.refreshTokenHash).toMatch(/^[a-f0-9]{64}$/);
     expect(savedSession?.refreshTokenHash).not.toBe(result.refreshToken);
+  });
+
+  it('publishes registration domain events after the transaction commits', async () => {
+    const { service, db, accountsRepository, domainEventsPublisher } =
+      createService();
+    let isInsideTransaction = false;
+    const publishTransactionStates: boolean[] = [];
+
+    accountsRepository.findByProvider.mockResolvedValue(null);
+    db.transaction.mockImplementation(async <T>(
+      callback: (tx: Tx) => Promise<T>,
+    ) => {
+      isInsideTransaction = true;
+      const result = await callback({} as Tx);
+      isInsideTransaction = false;
+      return result;
+    });
+    domainEventsPublisher.publishEventsForAggregate.mockImplementation(
+      async () => {
+        publishTransactionStates.push(isInsideTransaction);
+      },
+    );
+
+    await service.register('user@example.com', 'password123', 'User');
+
+    expect(publishTransactionStates).toEqual([false]);
+  });
+
+  it('does not publish registration domain events when the transaction fails', async () => {
+    const { service, accountsRepository, domainEventsPublisher } = createService();
+    const account = Account.createEmailIdentity(
+      'account-id',
+      'user-id',
+      'user@example.com',
+      'stored-hash',
+    );
+    accountsRepository.findByProvider.mockResolvedValue(account);
+
+    await expect(
+      service.register('user@example.com', 'password123', 'User'),
+    ).rejects.toMatchObject({
+      response: { message: 'This email is already registered' },
+    });
+    expect(domainEventsPublisher.publishEventsForAggregate).not.toHaveBeenCalled();
   });
 
   it('looks up logout sessions by refresh token hash', async () => {

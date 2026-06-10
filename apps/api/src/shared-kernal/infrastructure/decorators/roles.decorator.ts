@@ -1,6 +1,8 @@
 import { SetMetadata } from '@nestjs/common';
 import { RoleType } from '../../domain/value-objects/role.vo';
 
+export const ROLES_KEY = 'roles';
+
 /**
  * Role-based authorization decorator
  *
@@ -10,4 +12,4 @@ import { RoleType } from '../../domain/value-objects/role.vo';
  * @Roles('ADMIN')
  * @Get('admin-only')
  */
-export const Roles = (...roles: RoleType[]) => SetMetadata('roles', roles);
+export const Roles = (...roles: RoleType[]) => SetMetadata(ROLES_KEY, roles);

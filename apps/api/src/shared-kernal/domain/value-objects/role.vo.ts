@@ -1,17 +1,12 @@
-import { UserDatabase } from '@chatty-nest/database';
-
-/**
- * Role types derived from UserDatabase['role'] type
- */
-export type RoleType = UserDatabase['role'];
-
 /**
  * Role enums for runtime
  */
 export const ROLES = {
   ADMIN: 'ADMIN',
   USER: 'USER',
-} as const satisfies Record<RoleType, RoleType>;
+} as const;
+
+export type RoleType = (typeof ROLES)[keyof typeof ROLES];
 
 /**
  * Role hierarchy, the higher the index, the higher the role

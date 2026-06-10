@@ -39,7 +39,7 @@ The vision covers an API Gateway routing to dedicated microservices for auth, me
 
 ## Current State
 
-The following is implemented and production-ready within the monolith:
+The following auth foundation is implemented within the monolith:
 
 ### Auth Module
 
@@ -48,11 +48,11 @@ The following is implemented and production-ready within the monolith:
 - **Refresh token rotation** via httpOnly cookies — each refresh invalidates the old token and issues a new one
 - **Session management** — list all active sessions, revoke a specific session, or revoke everything at once
 - **Password change** — automatically invalidates all active sessions on success
-- **RBAC** — role-based access control with a defined hierarchy (`USER` → `ADMIN`), enforced at the DB level through the `RolesGuard`
-- **Ban system** — admins can ban users with optional expiry; banning auto-revokes all sessions via domain events
+- **RBAC** — role-based access control with a defined hierarchy (`USER` → `ADMIN`), enforced through the global JWT and roles guards
+- **Ban system foundation** — domain model, schema fields, and session-revocation listener are in place; admin-facing ban APIs are planned
 - **Device tracking** — sessions record IP address and User-Agent for each active login
-- **Admin impersonation** — session schema supports `impersonatedBy`, ready for an admin impersonation feature
-- **CLS (Continuation Local Storage)** — request-scoped auth context (`userId`, `sessionId`, `roles`, `ip`) propagated throughout the request lifecycle without prop-drilling
+- **Admin impersonation foundation** — session schema supports `impersonatedBy`; the user-facing API is planned
+- **CLS (Continuation Local Storage)** — request-scoped metadata (`requestId`, `ip`, `userAgent`, `url`) is propagated without prop-drilling
 
 ### Infrastructure
 

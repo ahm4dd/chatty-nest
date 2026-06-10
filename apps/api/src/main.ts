@@ -13,6 +13,7 @@ import appConfig, { type AppConfig } from './app/config/app.config';
 async function bootstrap() {
   const httpAdapter = new UwsPlatformAdapter();
   const app = await NestFactory.create(AppModule, httpAdapter);
+  app.enableShutdownHooks();
   // const app = await NestFactory.create(AppModule);
   const globalPrefix = 'api';
 

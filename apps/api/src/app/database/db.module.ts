@@ -1,7 +1,12 @@
 import { DynamicModule, Global, Module } from '@nestjs/common';
-import { DB_TOKEN, DrizzleAsyncOptions, DrizzleModuleOptions } from './types';
+import {
+  DB_TOKEN,
+  DRIZZLE_CONNECTION_TOKEN,
+  DrizzleAsyncOptions,
+  DrizzleModuleOptions,
+} from './types';
 import databaseConfig, { DatabaseConfig } from '../config/database.config';
-import { createDrizzleInstance } from './db.provider';
+import { createDrizzleConnection, DrizzleConnection } from './db.provider';
 
 @Global()
 @Module({})
@@ -11,10 +16,10 @@ export class DrizzleModule {
       module: DrizzleModule,
       providers: [
         {
-          provide: DB_TOKEN,
+          provide: DRIZZLE_CONNECTION_TOKEN,
           inject: [databaseConfig.KEY],
           useFactory: async (databaseConfigValue: DatabaseConfig) => {
-            return await createDrizzleInstance({
+            return await createDrizzleConnection({
               connectionString:
                 options?.connectionString ?? databaseConfigValue.DATABASE_URL,
               connectionTimeoutMillis:
@@ -27,6 +32,11 @@ export class DrizzleModule {
               min: options?.min ?? databaseConfigValue.DATABASE_POOL_MIN,
             });
           },
+        },
+        {
+          provide: DB_TOKEN,
+          inject: [DRIZZLE_CONNECTION_TOKEN],
+          useFactory: (connection: DrizzleConnection) => connection.db,
         },
       ],
       exports: [DB_TOKEN],
@@ -41,12 +51,17 @@ export class DrizzleModule {
       imports: options.imports ?? [],
       providers: [
         {
-          provide: DB_TOKEN,
+          provide: DRIZZLE_CONNECTION_TOKEN,
           inject: options.inject ?? [],
           useFactory: async (...args: unknown[]) => {
             const moduleOptions = await options.useFactory(...args);
-            return await createDrizzleInstance(moduleOptions);
+            return await createDrizzleConnection(moduleOptions);
           },
+        },
+        {
+          provide: DB_TOKEN,
+          inject: [DRIZZLE_CONNECTION_TOKEN],
+          useFactory: (connection: DrizzleConnection) => connection.db,
         },
       ],
       exports: [DB_TOKEN],

@@ -68,7 +68,7 @@ export class AuthService {
   ): Promise<AuthResult> {
     const passwordHash = await this.passwordHasher.hash(password);
 
-    const { userId, role, sessionId, refreshToken } = await this.db.transaction(async (tx) => {
+    const { user, userId, role, sessionId, refreshToken } = await this.db.transaction(async (tx) => {
       const existing = await this.accountsRepository.findByProvider('email', email, tx);
       if (existing) {
         throw new ConflictException({
@@ -84,12 +84,12 @@ export class AuthService {
       const account = Account.createEmailIdentity(accountId, userId, email, passwordHash);
       await this.accountsRepository.save(account, tx);
 
-      await this.domainEventsPublisher.publishEventsForAggregate(user);
-
       const session = await this.createSession(userId, deviceContext, tx);
 
-      return { userId, role: user.role, sessionId: session.sessionId, refreshToken: session.refreshToken };
+      return { user, userId, role: user.role, sessionId: session.sessionId, refreshToken: session.refreshToken };
     });
+
+    await this.domainEventsPublisher.publishEventsForAggregate(user);
 
     const accessToken = this.jwtService.sign({
       sub: userId,
