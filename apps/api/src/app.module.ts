@@ -12,6 +12,7 @@ import { createClsConfig } from './app/config/helpers/cls.config-helper';
 import { DomainEventsModule } from './app/events/domain-events.module';
 import { DocsModule } from './app/docs/docs.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ModerationModule } from './modules/moderation/moderation.module';
 import { ExceptionLoggingFilter } from './app/filters/exception-logging.filter';
 
 @Module({
@@ -33,6 +34,7 @@ import { ExceptionLoggingFilter } from './app/filters/exception-logging.filter';
     }),
     DomainEventsModule,
     AuthModule,
+    ModerationModule,
   ],
   controllers: [AppController],
   providers: [

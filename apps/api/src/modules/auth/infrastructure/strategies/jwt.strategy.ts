@@ -3,18 +3,18 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import appConfig, { type AppConfig } from '../../../../app/config/app.config';
 import { JwtPayload, AuthenticatedUser } from '../interfaces/jwt.interface';
-import { SESSIONS_REPOSITORY_TOKEN, USERS_REPOSITORY_TOKEN } from '../../application/ports/tokens';
-import type { UsersRepositoryPort } from '../../application/ports/users.repository.port';
+import { SESSIONS_REPOSITORY_TOKEN, BAN_STATUS_QUERY_TOKEN } from '../../application/ports/tokens';
+import type { BanStatusQueryPort } from '../../application/ports/ban-status.query.port';
 import type { SessionsRepositoryPort } from '../../application/ports/sessions.repository.port';
 
 @Injectable()
 export class JwtAuthStrategy extends PassportStrategy(Strategy) {
   constructor(
     @Inject(appConfig.KEY) appConfig: AppConfig,
-    @Inject(USERS_REPOSITORY_TOKEN)
-    private readonly usersRepository: UsersRepositoryPort,
     @Inject(SESSIONS_REPOSITORY_TOKEN)
     private readonly sessionsRepository: SessionsRepositoryPort,
+    @Inject(BAN_STATUS_QUERY_TOKEN)
+    private readonly banStatusQuery: BanStatusQueryPort,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -25,9 +25,9 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
-    const isActive = await this.usersRepository.existsAndActive(payload.sub);
-    if (!isActive) {
-      throw new UnauthorizedException('Account is banned or not found');
+    const banStatus = await this.banStatusQuery.getBanStatus(payload.sub);
+    if (banStatus.isBanned) {
+      throw new UnauthorizedException('Account is banned');
     }
 
     const session = await this.sessionsRepository.findById(payload.sessionId);

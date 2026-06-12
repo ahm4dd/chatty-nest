@@ -23,7 +23,16 @@ export class AccountsRepositoryImpl implements AccountsRepositoryPort {
       updatedAt: record.updatedAt,
     }).onConflictDoUpdate({
       target: accounts.id,
-      set: { ...record, updatedAt: new Date() },
+      set: {
+        passwordHash: record.passwordHash,
+        accessToken: record.accessToken,
+        refreshToken: record.refreshToken,
+        accessTokenExpiresAt: record.accessTokenExpiresAt,
+        refreshTokenExpiresAt: record.refreshTokenExpiresAt,
+        idToken: record.idToken,
+        scope: record.scope,
+        updatedAt: new Date(),
+      },
     });
   }
 

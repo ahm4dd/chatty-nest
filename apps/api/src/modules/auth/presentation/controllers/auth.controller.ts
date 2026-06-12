@@ -127,9 +127,9 @@ export class AuthController {
   async me(
     @Req() req: AuthenticatedRequest,
   ): Promise<CurrentSessionResponseDto> {
-    const { id: userId, email, roles, sessionId } = req.user;
+    const { id: userId, sessionId } = req.user;
 
-    return this.authService.getSession(sessionId, userId, email, roles[0] ?? 'USER');
+    return this.authService.getSession(sessionId, userId);
   }
 
   @Get('sessions')

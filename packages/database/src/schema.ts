@@ -6,13 +6,14 @@
  * conflicts that arise from namespace imports and typeof inference.
  */
 
-import { users, accounts, sessions, verifications } from './schemas/index.js';
+import { users, accounts, sessions, verifications, banEvents } from './schemas/index.js';
 
 export const schema = {
   users,
   accounts,
   sessions,
   verifications,
+  banEvents,
 } as const;
 
 export type Schema = typeof schema;

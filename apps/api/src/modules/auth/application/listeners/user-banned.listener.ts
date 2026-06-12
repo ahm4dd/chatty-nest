@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { UserBannedEvent } from '../../domain/events/user-banned.event';
+import { UserBannedEvent } from '../../../../shared-kernal/domain/events/user-banned.event';
 import { SESSIONS_REPOSITORY_TOKEN } from '../ports/tokens';
 import type { SessionsRepositoryPort } from '../ports/sessions.repository.port';
 

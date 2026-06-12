@@ -34,10 +34,7 @@ export class UsersRepositoryImpl implements UsersRepositoryPort {
       preferences: record.preferences,
       emailVerified: record.emailVerified,
       image: record.image,
-      role: record.role,
-      banned: record.banned,
-      banReason: record.banReason,
-      banExpires: record.banExpires,
+      roles: record.roles,
       updatedAt: new Date(),
     }).where(eq(users.id, user.id)).returning({ id: users.id });
 
@@ -82,11 +79,6 @@ export class UsersRepositoryImpl implements UsersRepositoryPort {
     return true;
   }
 
-  async existsAndActive(id: string): Promise<boolean> {
-    const user = await this.findById(id);
-
-    return user?.isActive() ?? false;
-  }
 }
 
 function createUsernameCandidate(base: string, attempt: number): string {

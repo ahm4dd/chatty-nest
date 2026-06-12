@@ -3,6 +3,8 @@
  */
 export const ROLES = {
   ADMIN: 'ADMIN',
+  SUPPORT: 'SUPPORT',
+  MODERATOR: 'MODERATOR',
   USER: 'USER',
 } as const;
 
@@ -14,20 +16,15 @@ export type RoleType = (typeof ROLES)[keyof typeof ROLES];
  * @example
  * ['USER', 'ADMIN']
  */
-export const ROLE_HIERARCHY: RoleType[] = ['USER', 'ADMIN'];
+export const ROLE_HIERARCHY: RoleType[] = ['USER', 'SUPPORT', 'MODERATOR', 'ADMIN'];
 
 /**
- * Checks whether a role satisfies the required minimum role.
+ * Checks whether any of the actor roles satisfies the required minimum role.
  *
- * @param actorRole - The role of the actor
+ * @param actorRoles - The roles of the actor
  * @param requiredRole - The minimum required role
  */
-export function hasRequiredRole(
-  actorRole: RoleType,
-  requiredRole: RoleType,
-): boolean {
-  const actorRoleIndex = ROLE_HIERARCHY.indexOf(actorRole);
-  const requiredRoleIndex = ROLE_HIERARCHY.indexOf(requiredRole);
-
-  return actorRoleIndex >= requiredRoleIndex;
+export function hasRequiredRole(actorRoles: RoleType[], requiredRole: RoleType): boolean {
+  const requiredIndex = ROLE_HIERARCHY.indexOf(requiredRole);
+  return actorRoles.some((role) => ROLE_HIERARCHY.indexOf(role) >= requiredIndex);
 }

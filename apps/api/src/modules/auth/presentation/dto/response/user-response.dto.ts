@@ -3,5 +3,5 @@ import type { RoleType } from '../../../../../shared-kernal/domain/value-objects
 export interface UserResponseDto {
   id: string;
   email: string;
-  role: RoleType;
+  roles: RoleType[];
 }

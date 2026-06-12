@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   jsonb,
@@ -15,7 +16,7 @@ import {
  * Single source of truth for role values. Downstream types (backend RoleType,
  * frontend RBAC helpers) derive from this.
  */
-export const userRoleEnum = pgEnum('user_role', ['ADMIN', 'USER']);
+export const userRoleEnum = pgEnum('user_role', ['ADMIN', 'SUPPORT', 'MODERATOR', 'USER']);
 
 /**
  * User preferences
@@ -63,10 +64,7 @@ export const users = pgTable(
 
     // ---- Better Auth admin plugin fields ----
 
-    role: userRoleEnum('role').notNull().default('USER'),
-    banned: boolean('banned').notNull().default(false),
-    banReason: text('ban_reason'),
-    banExpires: timestamp('ban_expires'),
+    roles: userRoleEnum('roles').array().notNull().default(sql`'{"USER"}'::user_role[]`),
 
     // ---- Extended fields (additionalFields) ----
 

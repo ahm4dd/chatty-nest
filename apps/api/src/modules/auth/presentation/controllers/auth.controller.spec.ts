@@ -22,7 +22,7 @@ describe('AuthController', () => {
         user: {
           id: 'user-id',
           email: 'user@example.com',
-          role: 'USER' as const,
+          roles: ['USER'],
         },
       })),
     } as unknown as AuthService;
@@ -57,7 +57,7 @@ describe('AuthController', () => {
       user: {
         id: 'user-id',
         email: 'user@example.com',
-        role: 'USER',
+        roles: ['USER'],
       },
     });
     expect('refreshToken' in body).toBe(false);

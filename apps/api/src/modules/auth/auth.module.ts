@@ -11,6 +11,7 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
 import { UsersRepositoryImpl } from './infrastructure/repositories/users.repository';
 import { AccountsRepositoryImpl } from './infrastructure/repositories/accounts.repository';
 import { SessionsRepositoryImpl } from './infrastructure/repositories/sessions.repository';
+import { BanStatusQueryImpl } from './infrastructure/repositories/ban-status.query';
 import { Argon2PasswordHasher } from './infrastructure/hasher/argon2-password-hasher';
 import { JwtAuthGuard } from './infrastructure/guards/jwt-auth.guard';
 import { UserBannedListener } from './application/listeners/user-banned.listener';
@@ -19,6 +20,7 @@ import {
   SESSIONS_REPOSITORY_TOKEN,
   ACCOUNTS_REPOSITORY_TOKEN,
   PASSWORD_HASHER_TOKEN,
+  BAN_STATUS_QUERY_TOKEN,
 } from './application/ports/tokens';
 
 @Global()
@@ -29,6 +31,7 @@ import {
     { provide: SESSIONS_REPOSITORY_TOKEN, useClass: SessionsRepositoryImpl },
     { provide: ACCOUNTS_REPOSITORY_TOKEN, useClass: AccountsRepositoryImpl },
     { provide: PASSWORD_HASHER_TOKEN, useClass: Argon2PasswordHasher },
+    { provide: BAN_STATUS_QUERY_TOKEN, useClass: BanStatusQueryImpl },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

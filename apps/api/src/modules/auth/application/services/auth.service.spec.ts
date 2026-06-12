@@ -1,12 +1,13 @@
 import { JwtService } from '@nestjs/jwt';
 import { DomainEventsPublisher } from '../../../../app/events/domain-events-publisher.service';
-import type { DrizzleDb, Tx } from '../../../../app/database/types';
+import type { DrizzleDb } from '../../../../app/database/types';
 import { Account } from '../../domain/aggregates/account.aggregate';
 import type { Session } from '../../domain/entities/session.entity';
 import type { UsersRepositoryPort } from '../ports/users.repository.port';
 import type { AccountsRepositoryPort } from '../ports/accounts.repository.port';
 import type { SessionsRepositoryPort } from '../ports/sessions.repository.port';
 import type { PasswordHasher } from '../ports/password-hasher.port';
+import type { BanStatusQueryPort } from '../ports/ban-status.query.port';
 import { AuthService } from './auth.service';
 
 describe('AuthService refresh sessions', () => {
@@ -21,8 +22,8 @@ describe('AuthService refresh sessions', () => {
 
   function createService() {
     const db = {
-      transaction: jest.fn(async <T>(callback: (tx: Tx) => Promise<T>) =>
-        callback({} as Tx),
+      transaction: jest.fn((callback: unknown) =>
+        (callback as (tx: never) => Promise<unknown>)({} as never),
       ),
     } as unknown as jest.Mocked<DrizzleDb>;
 
@@ -30,7 +31,6 @@ describe('AuthService refresh sessions', () => {
       save: jest.fn(async (user) => user),
       findById: jest.fn(),
       exists: jest.fn(),
-      existsAndActive: jest.fn(),
     } as unknown as jest.Mocked<UsersRepositoryPort>;
 
     const accountsRepository = {
@@ -60,8 +60,13 @@ describe('AuthService refresh sessions', () => {
       sign: jest.fn(() => 'access-token'),
     } as unknown as JwtService;
 
+    const banStatusQuery = {
+      getBanStatus: jest.fn(async () => ({ isBanned: false, reason: null, expiresAt: null })),
+    } as unknown as jest.Mocked<BanStatusQueryPort>;
+
     const domainEventsPublisher = {
       publishEventsForAggregate: jest.fn(async () => undefined),
+      publish: jest.fn(async () => undefined),
     } as unknown as jest.Mocked<DomainEventsPublisher>;
 
     const service = new AuthService(
@@ -70,6 +75,7 @@ describe('AuthService refresh sessions', () => {
       accountsRepository,
       sessionsRepository,
       passwordHasher,
+      banStatusQuery,
       jwtService,
       appConfig,
       domainEventsPublisher,
@@ -80,6 +86,7 @@ describe('AuthService refresh sessions', () => {
       db,
       accountsRepository,
       sessionsRepository,
+      banStatusQuery,
       domainEventsPublisher,
     };
   }
@@ -105,11 +112,9 @@ describe('AuthService refresh sessions', () => {
     const publishTransactionStates: boolean[] = [];
 
     accountsRepository.findByProvider.mockResolvedValue(null);
-    db.transaction.mockImplementation(async <T>(
-      callback: (tx: Tx) => Promise<T>,
-    ) => {
+    db.transaction.mockImplementation(async (callback: unknown) => {
       isInsideTransaction = true;
-      const result = await callback({} as Tx);
+      const result = await (callback as (tx: never) => Promise<unknown>)({} as never);
       isInsideTransaction = false;
       return result;
     });

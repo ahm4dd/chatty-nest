@@ -10,7 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import type { RoleType } from '../../../../shared-kernal/domain/value-objects/role.vo';
 
 import { DB_TOKEN, type DrizzleDb, type Tx } from '../../../../app/database/types';
-import { USERS_REPOSITORY_TOKEN } from '../ports/tokens';
+import { USERS_REPOSITORY_TOKEN, BAN_STATUS_QUERY_TOKEN } from '../ports/tokens';
 import { ACCOUNTS_REPOSITORY_TOKEN } from '../ports/tokens';
 import { SESSIONS_REPOSITORY_TOKEN } from '../ports/tokens';
 import { PASSWORD_HASHER_TOKEN } from '../ports/tokens';
@@ -18,6 +18,7 @@ import type { UsersRepositoryPort } from '../ports/users.repository.port';
 import type { AccountsRepositoryPort } from '../ports/accounts.repository.port';
 import type { SessionsRepositoryPort } from '../ports/sessions.repository.port';
 import type { PasswordHasher } from '../ports/password-hasher.port';
+import type { BanStatusQueryPort } from '../ports/ban-status.query.port';
 import { User } from '../../domain/aggregates/user.aggregate';
 import { Account } from '../../domain/aggregates/account.aggregate';
 import { Session } from '../../domain/entities/session.entity';
@@ -37,7 +38,7 @@ interface AuthResult {
   user: {
     id: string;
     email: string;
-    role: RoleType;
+    roles: RoleType[];
   };
 }
 
@@ -54,6 +55,8 @@ export class AuthService {
     private readonly sessionsRepository: SessionsRepositoryPort,
     @Inject(PASSWORD_HASHER_TOKEN)
     private readonly passwordHasher: PasswordHasher,
+    @Inject(BAN_STATUS_QUERY_TOKEN)
+    private readonly banStatusQuery: BanStatusQueryPort,
     private readonly jwtService: JwtService,
     @Inject(appConfig.KEY)
     private readonly appConfig: AppConfig,
@@ -68,7 +71,7 @@ export class AuthService {
   ): Promise<AuthResult> {
     const passwordHash = await this.passwordHasher.hash(password);
 
-    const { user, userId, role, sessionId, refreshToken } = await this.db.transaction(async (tx) => {
+    const { user, userId, sessionId, refreshToken } = await this.db.transaction(async (tx) => {
       const existing = await this.accountsRepository.findByProvider('email', email, tx);
       if (existing) {
         throw new ConflictException({
@@ -86,7 +89,7 @@ export class AuthService {
 
       const session = await this.createSession(userId, deviceContext, tx);
 
-      return { user, userId, role: user.role, sessionId: session.sessionId, refreshToken: session.refreshToken };
+      return { user, userId, roles: user.roles, sessionId: session.sessionId, refreshToken: session.refreshToken };
     });
 
     await this.domainEventsPublisher.publishEventsForAggregate(user);
@@ -94,11 +97,11 @@ export class AuthService {
     const accessToken = this.jwtService.sign({
       sub: userId,
       email,
-      roles: [role],
+      roles: [...user.roles],
       sessionId,
     });
 
-    return { accessToken, refreshToken, user: { id: userId, email, role } };
+    return { accessToken, refreshToken, user: { id: userId, email, roles: user.roles } };
   }
 
   async login(
@@ -140,9 +143,12 @@ export class AuthService {
       });
     }
 
-    if (!user.isActive()) {
+    const banStatus = await this.banStatusQuery.getBanStatus(user.id);
+    if (banStatus.isBanned) {
       throw new UnauthorizedException({
         message: 'Account is banned',
+        reason: banStatus.reason ?? undefined,
+        expiresAt: banStatus.expiresAt?.toISOString(),
       });
     }
 
@@ -151,24 +157,22 @@ export class AuthService {
     const accessToken = this.jwtService.sign({
       sub: user.id,
       email,
-      roles: [user.role],
+      roles: [...user.roles],
       sessionId,
     });
 
-    return { accessToken, refreshToken, user: { id: user.id, email, role: user.role } };
+    return { accessToken, refreshToken, user: { id: user.id, email, roles: user.roles } };
   }
 
   async rotateSession(refreshToken: string): Promise<AuthResult> {
     const refreshTokenHash = hashRefreshToken(refreshToken);
-    const { userId, email, role, sessionId, newRefreshToken } = await this.db.transaction(async (tx) => {
+    const { userId, email, roles, sessionId, newRefreshToken } = await this.db.transaction(async (tx) => {
       const session = await this.sessionsRepository.findByRefreshTokenHash(refreshTokenHash, tx);
       if (!session?.isValid) {
         throw new UnauthorizedException({
           message: 'Invalid or expired refresh token',
         });
       }
-
-      await this.sessionsRepository.delete(session.id, tx);
 
       const user = await this.usersRepository.findById(session.userId, tx);
       if (!user) {
@@ -177,25 +181,26 @@ export class AuthService {
         });
       }
 
-      if (!user.isActive()) {
-        throw new UnauthorizedException({
-          message: 'Account is banned',
-        });
+      const banStatus = await this.banStatusQuery.getBanStatus(user.id, tx);
+      if (banStatus.isBanned) {
+        throw new UnauthorizedException({ message: 'Account is banned' });
       }
+
+      await this.sessionsRepository.delete(session.id, tx);
 
       const newSession = await this.createSession(user.id, undefined, tx);
 
-      return { userId: user.id, email: user.email, role: user.role, sessionId: newSession.sessionId, newRefreshToken: newSession.refreshToken };
+      return { userId: user.id, email: user.email, roles: user.roles, sessionId: newSession.sessionId, newRefreshToken: newSession.refreshToken };
     });
 
     const accessToken = this.jwtService.sign({
       sub: userId,
       email,
-      roles: [role],
+      roles: [...roles],
       sessionId,
     });
 
-    return { accessToken, refreshToken: newRefreshToken, user: { id: userId, email, role } };
+    return { accessToken, refreshToken: newRefreshToken, user: { id: userId, email, roles } };
   }
 
   async logout(refreshToken: string): Promise<boolean> {
@@ -232,7 +237,7 @@ export class AuthService {
     return { success: deleted, message: deleted ? 'Session revoked' : 'Revocation failed' };
   }
 
-  async getSession(sessionId: string, userId: string, email: string, role: RoleType) {
+  async getSession(sessionId: string, userId: string) {
     const session = await this.sessionsRepository.findById(sessionId);
     if (!session) {
       throw new UnauthorizedException({
@@ -246,8 +251,15 @@ export class AuthService {
       });
     }
 
+    const user = await this.usersRepository.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException({
+        message: 'Session not found or has expired',
+      });
+    }
+
     return {
-      user: { id: userId, email, role },
+      user: { id: user.id, email: user.email, roles: user.roles },
       session: {
         id: session.id,
         expiresAt: session.expiresAt,
@@ -336,5 +348,4 @@ export class AuthService {
 
     return { sessionId, refreshToken };
   }
-
 }

@@ -137,7 +137,7 @@ function createUsersRepository(role?: 'ADMIN' | 'USER') {
     findById: jest.fn(async () =>
       role
         ? {
-            role,
+            roles: [role],
           }
         : null,
     ),
